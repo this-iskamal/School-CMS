@@ -3,25 +3,26 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
+import NoticeComponent from "../components/NoticeComponent";
 
-export default function CaruselItems() {
+export default function EditNotice() {
   const navigate = useNavigate();
   return (
     <div className="bg-white w-full h-screen flex flex-col">
       <Navbar />
-      <div className="flex-1 flex flex-row ">
-        <Sidebar select={"carusel"} className="hidden"/>
-        <div className={" flex-1 w-full sm:max-w-sm sm:border-r-2 "}>
+      <div className="flex flex-row flex-1 overflow-hidden">
+        <Sidebar select={"recentnotices"} />
+        <div className="hidden sm:flex flex-col w-full sm:max-w-sm sm:border-r-2">
           <div className="p-3 flex flex-row justify-between items-center">
-          <div className="flex flex-row flex-1 gap-2">
+            <div className="flex flex-row flex-1 gap-2">
               <Icon.ArrowLeft
                 size={20}
                 color="gray"
                 strokeWidth={1.5}
-                className="cursor-pointer"
+                className="cursor-pointer md:hidden"
                 onClick={() => navigate(-1)}
               />
-              <h1 className="text-sm font-semibold ">Carousel Items</h1>
+              <h1 className="text-sm font-semibold">Recent Notices</h1>
             </div>
             <div className="flex flex-row gap-3">
               <Icon.Plus
@@ -52,7 +53,7 @@ export default function CaruselItems() {
               className="w-full pl-8 pr-2 py-1 outline-none text-sm border-none"
             />
           </div>
-          <div className="mt-4 mx-3 flex flex-col gap-2">
+          <div className="mt-4 mx-3 flex flex-col gap-2 overflow-auto">
             <div className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100">
               <img src="src/assets/profile.png" alt="" className="h-10 w-10" />
               <div className="flex-1">
@@ -80,6 +81,9 @@ export default function CaruselItems() {
               </div>
             </div>
           </div>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <NoticeComponent />
         </div>
       </div>
     </div>

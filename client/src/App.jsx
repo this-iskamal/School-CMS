@@ -7,6 +7,7 @@ import CaruselItems from "./pages/CaruselItems";
 import RecentNotices from "./pages/RecentNotices";
 import Teachers from "./pages/Teachers";
 import NotFound from "./pages/NotFound";
+import EditNotice from "./pages/EditNotice";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/carusel" element={<CaruselItems />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/recentnotices" element={<RecentNotices />} />
+        <Route path="/recentnotices/:id" element={<EditNotice />} />
         <Route path="/teachers" element={<Teachers />} />
       </Routes>
     </BrowserRouter>
