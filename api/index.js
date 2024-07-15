@@ -7,6 +7,7 @@ import galleryRoute from "./routes/gallery.routes.js";
 import newsRoute from "./routes/news.routes.js";
 import recentNoticesRoute from "./routes/recentNotices.routes.js";
 import teachersRoute from "./routes/teachers.routes.js";
+import authRoute from "./routes/auth.routes.js";
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
 
+app.use("/api/auth", authRoute);
 app.use("/api/carouselItems", carouselItemsRoute);
 app.use("/api/gallery", galleryRoute);
 app.use("/api/news", newsRoute);

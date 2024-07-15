@@ -8,19 +8,37 @@ import RecentNotices from "./pages/RecentNotices";
 import Teachers from "./pages/Teachers";
 import NotFound from "./pages/NotFound";
 import EditNotice from "./pages/EditNotice";
+import LoginPage from "./pages/LoginPage";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/news" element={<News />} />
-        <Route path="/carusel" element={<CaruselItems />} />
+        <Route element={<PrivateRoute />}>
+          <Route path="/" element={<Dashboard />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/gallery" element={<Gallery />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/news" element={<News />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/carusel" element={<CaruselItems />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/recentnotices" element={<RecentNotices />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/recentnotices/:id" element={<EditNotice />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/teachers" element={<Teachers />} />
+        </Route>
+
+        <Route path="/sign-in" element={<LoginPage />} />
         <Route path="*" element={<NotFound />} />
-        <Route path="/recentnotices" element={<RecentNotices />} />
-        <Route path="/recentnotices/:id" element={<EditNotice />} />
-        <Route path="/teachers" element={<Teachers />} />
       </Routes>
     </BrowserRouter>
   );
