@@ -1,34 +1,26 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const imageSchema = new mongoose.Schema({
-  imageUrl: {
+const { Schema } = mongoose;
+
+const RecentNoticeSchema = new Schema({
+  title: {
     type: String,
     required: true,
   },
+  slug: {
+    type: String,
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  images: [{
+    type: String,
+    required: true,
+  }],
 });
 
-const recentNoticeSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    content: {
-      type: String,
-      required: true,
-    },
-    images: [imageSchema],
-  },
-  {
-    timestamps: true,
-  }
-);
+const RecentNotice = mongoose.model('RecentNotice', RecentNoticeSchema);
 
-const RecentNotice = mongoose.model("RecentNotice", recentNoticeSchema);
-
-module.exports = RecentNotice;
+export default RecentNotice;

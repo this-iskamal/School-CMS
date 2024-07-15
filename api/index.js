@@ -30,10 +30,10 @@ app.listen(3000, () => {
 });
 
 app.use("/api/auth", authRoute);
-app.use("/api/carouselItems", carouselItemsRoute);
+app.use("/api/carouselitems", carouselItemsRoute);
 app.use("/api/gallery", galleryRoute);
 app.use("/api/news", newsRoute);
-app.use("/api/recentNotices", recentNoticesRoute);
+app.use("/api/recentnotices", recentNoticesRoute);
 app.use("/api/teachers", teachersRoute);
 
 app.use((err, req, res, next) => {
