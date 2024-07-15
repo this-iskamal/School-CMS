@@ -3,22 +3,14 @@ import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { useSelector } from "react-redux";
-import { formatDistanceToNow } from "date-fns";
-import { Button, Modal } from "flowbite-react";
-import { HiOutlineExclamationCircle } from "react-icons/hi";
 
-export default function NoticeComponent({ notice }) {
-  const { currentUser } = useSelector((state) => state.user);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [deleteModal, setDeleteModal] = useState(false);
+export default function CreateNotice() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
     content: "",
     images: [],
-    imageUrls: [],
   });
   const [recentNotice, setRecentNotice] = useState("");
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -26,32 +18,15 @@ export default function NoticeComponent({ notice }) {
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
-    if (notice) {
-      setFormData({
-        title: notice.title || "",
-        slug: notice.slug || "",
-        content: notice.content || "",
-        images: [],
-        imageUrls: notice.images || [], // Added this line
-      });
-      setRecentNotice(notice.content || "");
-      if (notice.images) {
-        setImagePreviews(notice.images);
-        setUploadProgress(Array(notice.images.length).fill(100));
-      }
-    }
-  }, [notice]);
-
-  useEffect(() => {
     const isValid =
-      (formData.title || "").trim() !== "" &&
-      (formData.slug || "").trim() !== "" &&
-      (recentNotice || "").trim() !== "" &&
-      (formData.images.length > 0 || imagePreviews.length > 0) &&
+      formData.title.trim() !== "" &&
+      formData.slug.trim() !== "" &&
+      recentNotice.trim() !== "" &&
+      formData.images.length > 0 &&
       uploadProgress.every((progress) => progress === 100);
 
     setIsFormValid(isValid);
-  }, [formData, recentNotice, uploadProgress, imagePreviews]);
+  }, [formData, recentNotice, uploadProgress]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -60,23 +35,21 @@ export default function NoticeComponent({ notice }) {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    const newImagePreviews = files.map((file) => file);
-    setImagePreviews([...imagePreviews, ...newImagePreviews]);
-    setFormData({ ...formData, images: [...formData.images, ...files] });
-    setUploadProgress([...uploadProgress, ...Array(files.length).fill(0)]);
+    const previewUrls = files.map((file) => URL.createObjectURL(file));
+    setImagePreviews(previewUrls);
+    setFormData({ ...formData, images: files });
+    setUploadProgress(Array(files.length).fill(0));
 
     files.forEach((file, index) => {
       const reader = new FileReader();
-      reader.onloadstart = () =>
-        updateProgress(uploadProgress.length + index, 0);
+      reader.onloadstart = () => updateProgress(index, 0);
       reader.onprogress = (event) => {
         if (event.lengthComputable) {
           const progress = (event.loaded / event.total) * 100;
-          updateProgress(uploadProgress.length + index, progress);
+          updateProgress(index, progress);
         }
       };
-      reader.onloadend = () =>
-        updateProgress(uploadProgress.length + index, 100);
+      reader.onloadend = () => updateProgress(index, 100);
       reader.readAsDataURL(file);
     });
   };
@@ -87,17 +60,6 @@ export default function NoticeComponent({ notice }) {
       newProgress[index] = progress;
       return newProgress;
     });
-  };
-
-  const handleRemoveImage = (index) => {
-    const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
-    const newImages = formData.images.filter((_, i) => i !== index);
-    const newImageUrls = formData.imageUrls.filter((_, i) => i !== index); // Added this line
-    const newUploadProgress = uploadProgress.filter((_, i) => i !== index);
-
-    setImagePreviews(newImagePreviews);
-    setFormData({ ...formData, images: newImages, imageUrls: newImageUrls }); // Updated this line
-    setUploadProgress(newUploadProgress);
   };
 
   const handleGenerateClick = (e) => {
@@ -118,19 +80,12 @@ export default function NoticeComponent({ notice }) {
     formData.images.forEach((image) => {
       noticeData.append("images", image);
     });
-    noticeData.append(
-      "imageUrls",
-      JSON.stringify(imagePreviews.filter((image) => typeof image === "string"))
-    );
 
     try {
-      const response = await fetch(
-        `/api/recentnotices/updatenotice/${notice._id}/${currentUser._id}`,
-        {
-          method: "PUT",
-          body: noticeData,
-        }
-      );
+      const response = await fetch("/api/recentnotices/addnewnotice", {
+        method: "POST",
+        body: noticeData,
+      });
 
       if (response.ok) {
         console.log("Notice published successfully!");
@@ -140,32 +95,6 @@ export default function NoticeComponent({ notice }) {
     } catch (error) {
       console.error("Error:", error);
     }
-  };
-
-  const handleToggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-  const handleDelete = async () => {
-    try {
-      const res = await fetch(
-        `/api/recentnotices/deletenotice/${notice._id}/${currentUser._id}`,
-        {
-          method: "DELETE",
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        console.log(data.message);
-      } else {
-        setDeleteModal(false);
-        navigate(-1);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-  const handleSchedulePublish = () => {
-    console.log("Schedule Publish clicked");
   };
 
   return (
@@ -259,11 +188,7 @@ export default function NoticeComponent({ notice }) {
               {imagePreviews.map((image, index) => (
                 <div key={index} className="relative">
                   <img
-                    src={
-                      typeof image === "string"
-                        ? `/${image}`
-                        : URL.createObjectURL(image)
-                    }
+                    src={image}
                     alt={`upload-${index}`}
                     className="h-20 w-20 object-cover rounded-sm"
                   />
@@ -279,13 +204,6 @@ export default function NoticeComponent({ notice }) {
                       <Icon.CheckCircle size={24} color="green" />
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                    onClick={() => handleRemoveImage(index)}
-                  >
-                    <Icon.X size={16} />
-                  </button>
                 </div>
               ))}
             </div>
@@ -293,71 +211,22 @@ export default function NoticeComponent({ notice }) {
         </form>
       </div>
       <div className="flex flex-row justify-between items-center px-6 py-2 border-t-2">
-        <h1 className="text-sm font-semibold">
-          {notice.createdAt
-            ? `Published ${formatDistanceToNow(new Date(notice.createdAt))} ago`
-            : "Not Published"}
-        </h1>
-
-        <div className="relative">
-          <div className="flex flex-row items-center gap-2">
-            <button
-              className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-                isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
-              }`}
-              type="submit"
-              disabled={!isFormValid}
-              onClick={handlePublish}
-            >
-              <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-              <span className="text-xs font-semibold">Publish</span>
-            </button>
-            <div onClick={handleToggleDropdown} className="cursor-pointer">
-              <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
-            </div>
-          </div>
-          {isDropdownOpen && (
-            <div className="absolute right-0 -mt-28 w-36 bg-white border border-gray-300 rounded shadow-lg">
-              <button
-                className="block w-full px-4 py-2 text-sm text-left border-b text-gray-800 hover:bg-gray-100"
-                onClick={()=>setDeleteModal(true)}
-              >
-                Delete
-              </button>
-              <button
-                className="block w-full text-sm px-4 py-2 text-left text-gray-800 hover:bg-gray-100"
-                onClick={handleSchedulePublish}
-              >
-                Schedule Publish
-              </button>
-            </div>
-          )}
+        <h1 className="text-sm font-semibold">Not Published</h1>
+        <div className="flex flex-row items-center gap-2">
+          <button
+            className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
+              isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+            }`}
+            type="submit"
+            disabled={!isFormValid}
+            onClick={handlePublish}
+          >
+            <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
+            <span className="text-xs font-semibold">Publish</span>
+          </button>
+          <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
         </div>
       </div>
-      <Modal
-        show={deleteModal}
-        onClose={() => setDeleteModal(false)}
-        popup
-        size="md"
-      >
-        <Modal.Header />
-        <Modal.Body>
-          <div className="text-center">
-            <HiOutlineExclamationCircle className="h-14 w-14 mb-4 mx-auto text-gray-400 dark:text-gray-200" />
-            <h3 className="mb-5 text-lg text-gray-500 dark:text-gray-400">
-              Are you sure you want to delete this notice?
-            </h3>
-            <div className="flex justify-center gap-4">
-              <Button color="failure" onClick={handleDelete}>
-                Yes, I'm sure
-              </Button>
-              <Button color="gray" onClick={() => setDeleteModal(false)}>
-                No, take me back
-              </Button>
-            </div>
-          </div>
-        </Modal.Body>
-      </Modal>
     </div>
   );
 }

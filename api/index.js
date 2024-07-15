@@ -8,6 +8,7 @@ import newsRoute from "./routes/news.routes.js";
 import recentNoticesRoute from "./routes/recentNotices.routes.js";
 import teachersRoute from "./routes/teachers.routes.js";
 import authRoute from "./routes/auth.routes.js";
+import path from "path";
 
 dotenv.config();
 
@@ -19,6 +20,8 @@ mongoose
   .catch((err) => {
     console.log("Error: ", err);
   });
+
+const __dirname = path.resolve();
 
 const app = express();
 
@@ -35,6 +38,8 @@ app.use("/api/gallery", galleryRoute);
 app.use("/api/news", newsRoute);
 app.use("/api/recentnotices", recentNoticesRoute);
 app.use("/api/teachers", teachersRoute);
+
+app.use("/api/uploads", express.static(path.join(__dirname, "api/uploads")));
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;

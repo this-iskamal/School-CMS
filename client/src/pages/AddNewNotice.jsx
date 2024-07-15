@@ -5,12 +5,13 @@ import * as Icon from "react-feather";
 import { useNavigate, useParams } from "react-router-dom";
 import NoticeComponent from "../components/NoticeComponent";
 import { useSelector } from "react-redux";
+import CreateNotice from "../components/CreateNotice";
 
-export default function EditNotice() {
+export default function AddNewNotice() {
   const { currentUser } = useSelector((state) => state.user);
   const [notices, setNotices] = useState([]);
-  const [notice , setNotice] = useState({});
-  const {noticeId} = useParams();
+  const [notice, setNotice] = useState({});
+  const { noticeId } = useParams();
 
   useEffect(() => {
     const fetchNotices = async () => {
@@ -22,18 +23,10 @@ export default function EditNotice() {
         console.error(error);
       }
     };
-    const fetchNotice = async () => {
-      try {
-        const response = await fetch(`/api/recentnotices/getnotices?noticeId=${noticeId}`);
-        const data = await response.json();
-        setNotice(data.notices[0]);
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    
     fetchNotices();
-    fetchNotice();
-  }, [currentUser._id,noticeId]);
+   
+  }, [currentUser._id, noticeId]);
   const navigate = useNavigate();
 
   return (
@@ -86,7 +79,7 @@ export default function EditNotice() {
             {notices &&
               notices.map((notice) => (
                 <div
-                key={notice._id}
+                  key={notice._id}
                   onClick={() => navigate(`/recentnotices/${notice._id}`)}
                   className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100"
                 >
@@ -109,7 +102,7 @@ export default function EditNotice() {
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
-          <NoticeComponent notice={notice}/>
+          <CreateNotice />
         </div>
       </div>
     </div>

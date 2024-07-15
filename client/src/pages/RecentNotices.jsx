@@ -1,11 +1,27 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
-import NoticeComponent from "../components/NoticeComponent";
+import { useSelector } from "react-redux";
 
 export default function RecentNotices() {
+  const { currentUser } = useSelector((state) => state.user);
+  const [notices, setNotices] = useState([]);
+
+  useEffect(() => {
+    const fetchNotices = async () => {
+      try {
+        const response = await fetch("/api/recentnotices/getnotices");
+        const data = await response.json();
+        setNotices(data.notices);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchNotices();
+  }, [currentUser._id]);
+
   const navigate = useNavigate();
   return (
     <div className="bg-white w-full h-screen flex flex-col">
@@ -31,6 +47,7 @@ export default function RecentNotices() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
+                onClick={() => navigate("createnotice")}
               />
               <Icon.MoreHorizontal
                 size={20}
@@ -55,32 +72,25 @@ export default function RecentNotices() {
             />
           </div>
           <div className="mt-4 mx-3 flex flex-col gap-2">
-            <div className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100">
-              <img src="src/assets/profile.png" alt="" className="h-10 w-10" />
-              <div className="flex-1">
-                <p className="line-clamp-1 px-1 text-sm text-gray-800">
-                  स्नातक तह चाैथाै वर्षकाे परीक्षा िदने परीक्षार्थीहरुकाे लागि
-                  परीक्षा अावेदन तथा छात्रवृत्ती Form भर्ने सुचना
-                </p>
-                <p className="line-clamp-1 px-1 text-xs text-gray-600">
-                  <span className="">Slug :</span>
-                  स्नातक-तह-चाैथाै-वर्षकाे-परीक्षा-िदने-परीक्षार्थीहरुकाे-लागि-परीक्षा-अावेदन-तथा-छात्रवृत्ती-form
-                </p>
-              </div>
-            </div>
-            <div className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100">
-              <img src="src/assets/profile.png" alt="" className="h-10 w-10" />
-              <div className="flex-1">
-                <p className="line-clamp-1 px-1 text-sm text-gray-800">
-                  स्नातक तह चाैथाै वर्षकाे परीक्षा िदने परीक्षार्थीहरुकाे लागि
-                  परीक्षा अावेदन तथा छात्रवृत्ती Form भर्ने सुचना
-                </p>
-                <p className="line-clamp-1 px-1 text-xs text-gray-600">
-                  <span className="">Slug :</span>
-                  स्नातक-तह-चाैथाै-वर्षकाे-परीक्षा-िदने-परीक्षार्थीहरुकाे-लागि-परीक्षा-अावेदन-तथा-छात्रवृत्ती-form
-                </p>
-              </div>
-            </div>
+            {notices &&
+              notices.map((notice) => (
+                <div key={notice._id} onClick={()=>navigate(`${notice._id}`)} className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100">
+                  <img
+                    src={`/${notice.images[0]}`}
+                    alt=""
+                    className="h-10 w-10"
+                  />
+                  <div className="flex-1">
+                    <p className="  line-clamp-1 px-1 text-sm text-gray-800">
+                      {notice.title}
+                    </p>
+                    <p className="line-clamp-1 px-1 text-xs text-gray-600">
+                      <span className="">Slug :</span>
+                      {notice.slug}
+                    </p>
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       </div>

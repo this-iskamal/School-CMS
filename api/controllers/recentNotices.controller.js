@@ -6,7 +6,7 @@ import RecentNotice from "../models/recentNotices.models.js";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/");
+    cb(null, "api/uploads/");
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -103,44 +103,47 @@ export const deleteNotice = async (req, res, next) => {
 };
 
 export const updateNotice = [
-  upload.array("images"),
+  upload.array('images'),
   async (req, res, next) => {
     if (!req.user.isAdmin) {
-      return next(
-        errorHandler(403, "You are not allowed to update this notice")
-      );
+      return next(errorHandler(403, 'You are not allowed to update this notice'));
     }
     if (!req.body.title || !req.body.slug || !req.body.content) {
-      return next(errorHandler(400, "Please provide all the fields"));
+      return next(errorHandler(400, 'Please provide all the fields'));
     }
 
     try {
       const notice = await RecentNotice.findById(req.params.noticeId);
       if (!notice) {
-        return next(errorHandler(404, "Notice not found"));
+        return next(errorHandler(404, 'Notice not found'));
       }
 
-      const newImagePaths = req.files&req.files.map((file) => file.path);
-
+      const newImagePaths = req.files.map((file) => file.path);
+      const imageUrls = JSON.parse(req.body.imageUrls); 
       const existingImages = notice.images;
 
+
+      const updatedImages = [...imageUrls, ...newImagePaths];
 
       notice.title = req.body.title;
       notice.slug = req.body.slug;
       notice.content = req.body.content;
+      notice.images = updatedImages;
 
-      if (newImagePaths.length > 0) {
-        notice.images = newImagePaths;
 
-        existingImages.forEach((imagePath) => {
-          const fullPath = path.resolve(imagePath);
-          fs.unlink(fullPath, (err) => {
-            if (err) {
-              console.error(`Failed to delete image at ${fullPath}: ${err}`);
-            }
-          });
+      const imagesToDelete = existingImages.filter(
+        (imagePath) => !imageUrls.includes(imagePath)
+      );
+
+
+      imagesToDelete.forEach((imagePath) => {
+        const fullPath = path.resolve(imagePath);
+        fs.unlink(fullPath, (err) => {
+          if (err) {
+            console.error(`Failed to delete image at ${fullPath}: ${err}`);
+          }
         });
-      }
+      });
 
       const updatedNotice = await notice.save();
       res.status(200).json(updatedNotice);

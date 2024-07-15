@@ -19,7 +19,7 @@ const RecentNoticeSchema = new Schema({
     type: String,
     required: true,
   }],
-});
+},{timestamps: true});
 
 const RecentNotice = mongoose.model('RecentNotice', RecentNoticeSchema);
 
