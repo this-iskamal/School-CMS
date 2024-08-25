@@ -32,7 +32,7 @@ export default function NoticeComponent({ notice }) {
         slug: notice.slug || "",
         content: notice.content || "",
         images: [],
-        imageUrls: notice.images || [], // Added this line
+        imageUrls: notice.images || [],
       });
       setRecentNotice(notice.content || "");
       if (notice.images) {

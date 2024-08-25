@@ -13,6 +13,8 @@ import PrivateRoute from "./components/PrivateRoute";
 import AddNewNotice from "./pages/AddNewNotice";
 import EditNews from "./pages/EditNews";
 import AddNewNews from "./pages/AddNewNews";
+import EditCarousel from "./pages/EditCarousel";
+import AddNewCarousel from "./pages/AddNewCarousel";
 
 function App() {
   return (
@@ -41,10 +43,16 @@ function App() {
           <Route path="/news/:newsId" element={<EditNews />} />
         </Route>
         <Route element={<PrivateRoute />}>
+          <Route path="/carusel/:carouselId" element={<EditCarousel />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
           <Route path="/recentnotices/createnotice" element={<AddNewNotice />} />
         </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/news/createnews" element={<AddNewNews />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/carusel/createcarousel" element={<AddNewCarousel />} />
         </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/teachers" element={<Teachers />} />
