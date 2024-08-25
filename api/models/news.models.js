@@ -19,6 +19,10 @@ const newsSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    images: [{
+      type: String,
+      required: true,
+    }],
   },
   {
     timestamps: true,
@@ -27,4 +31,4 @@ const newsSchema = new mongoose.Schema(
 
 const News = mongoose.model("News", newsSchema);
 
-module.exports = News;
+export default News;

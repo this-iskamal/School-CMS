@@ -11,6 +11,8 @@ import EditNotice from "./pages/EditNotice";
 import LoginPage from "./pages/LoginPage";
 import PrivateRoute from "./components/PrivateRoute";
 import AddNewNotice from "./pages/AddNewNotice";
+import EditNews from "./pages/EditNews";
+import AddNewNews from "./pages/AddNewNews";
 
 function App() {
   return (
@@ -31,11 +33,18 @@ function App() {
         <Route element={<PrivateRoute />}>
           <Route path="/recentnotices" element={<RecentNotices />} />
         </Route>
+       
         <Route element={<PrivateRoute />}>
           <Route path="/recentnotices/:noticeId" element={<EditNotice />} />
         </Route>
         <Route element={<PrivateRoute />}>
+          <Route path="/news/:newsId" element={<EditNews />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
           <Route path="/recentnotices/createnotice" element={<AddNewNotice />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/news/createnews" element={<AddNewNews />} />
         </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/teachers" element={<Teachers />} />

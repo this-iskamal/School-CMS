@@ -16,6 +16,7 @@ export default function CreateNotice() {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const isValid =
@@ -90,7 +91,10 @@ export default function CreateNotice() {
       if (response.ok) {
         console.log("Notice published successfully!");
       } else {
-        console.error("Failed to publish notice");
+        setError("Failed to publish notice");
+        if (response.message === "Unauthenticated User")
+          setError("Unauthenticated User. Please login to continue.");
+        console.log(response);
       }
     } catch (error) {
       console.error("Error:", error);
