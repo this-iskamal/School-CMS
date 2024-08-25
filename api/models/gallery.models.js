@@ -1,29 +1,23 @@
 import mongoose from "mongoose";
 
-const imageSchema = new mongoose.Schema({
-  title: {
+const gallerySchema = new mongoose.Schema({
+  description: {
     type: String,
     required: true,
   },
-  image: {
+  slug: {
     type: String,
     required: true,
   },
-});
-
-const gallerySchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-    },
-    images: [imageSchema],
-  },
-  {
-    timestamps: true,
-  }
+  images: [{
+    type: String,
+    required: true,
+  }],
+ 
+},
+{ timestamps: true }
 );
 
 const Gallery = mongoose.model("Gallery", gallerySchema);
 
-module.exports = Gallery;
+export default Gallery;

@@ -139,7 +139,6 @@ export const updateCarousel = [
           }
         });
       });
-      console.log(carousel)
 
       const updatedCarousel = await carousel.save();
       res.status(200).json(updatedCarousel);
