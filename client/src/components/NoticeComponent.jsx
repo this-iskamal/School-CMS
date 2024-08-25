@@ -92,11 +92,11 @@ export default function NoticeComponent({ notice }) {
   const handleRemoveImage = (index) => {
     const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
     const newImages = formData.images.filter((_, i) => i !== index);
-    const newImageUrls = formData.imageUrls.filter((_, i) => i !== index); // Added this line
+    const newImageUrls = formData.imageUrls.filter((_, i) => i !== index); 
     const newUploadProgress = uploadProgress.filter((_, i) => i !== index);
 
     setImagePreviews(newImagePreviews);
-    setFormData({ ...formData, images: newImages, imageUrls: newImageUrls }); // Updated this line
+    setFormData({ ...formData, images: newImages, imageUrls: newImageUrls }); 
     setUploadProgress(newUploadProgress);
   };
 
@@ -177,7 +177,7 @@ export default function NoticeComponent({ notice }) {
           color="gray"
           strokeWidth={2}
           className="cursor-pointer"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/recentnotices")}
         />
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-100 px-16 my-5 flex flex-col items-start">

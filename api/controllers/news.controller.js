@@ -33,6 +33,7 @@ export const addNewNews = [
         title: req.body.title,
         slug: req.body.slug,
         content: req.body.content,
+        author:req.body.author,
         images: imagePaths,
       });
   
@@ -53,6 +54,7 @@ export const addNewNews = [
       const sortDirection = req.query.order === "asc" ? 1 : -1;
       const news = await News.find({
         ...(req.query.slug && { slug: req.query.slug }),
+        ...(req.query.author && { author: req.query.author }),
         ...(req.query.newsId && { _id: req.query.newsId }),
         ...(req.query.searchTerm && {
           $or: [
@@ -76,11 +78,13 @@ export const addNewNews = [
   };
 
   export const deletenews = async (req, res, next) => {
+
     if (!req.user.isAdmin || req.user.id !== req.params.userId) {
       return next(errorHandler(403, "You are not allowed to delete this news"));
     }
   
     try {
+      
       const news = await News.findById(req.params.newsId);
       if (!news) {
         return next(errorHandler(404, "News not found"));
@@ -129,6 +133,7 @@ export const addNewNews = [
         const updatedImages = [...imageUrls, ...newImagePaths];
   
         news.title = req.body.title;
+        news.author = req.body.author;
         news.slug = req.body.slug;
         news.content = req.body.content;
         news.images = updatedImages;

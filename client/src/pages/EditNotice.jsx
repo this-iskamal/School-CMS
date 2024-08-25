@@ -59,6 +59,7 @@ export default function EditNotice() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
+                
               />
               <Icon.MoreHorizontal
                 size={20}

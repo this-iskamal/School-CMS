@@ -9,13 +9,13 @@ import NewsComponent from "../components/NewsComponent";
 export default function EditNews() {
   const { currentUser } = useSelector((state) => state.user);
   const [news, setnews] = useState([]);
-  const [newss , setnewss] = useState({});
-  const {newsId} = useParams();
+  const [newss, setnewss] = useState({});
+  const { newsId } = useParams();
 
   useEffect(() => {
     const fetchnews = async () => {
       try {
-        const response = await fetch("/api/recentnews/getnews");
+        const response = await fetch("/api/news/getnews");
         const data = await response.json();
         setnews(data.news);
       } catch (error) {
@@ -24,16 +24,16 @@ export default function EditNews() {
     };
     const fetchnewss = async () => {
       try {
-        const response = await fetch(`/api/recentnews/getnews?newsId=${newsId}`);
+        const response = await fetch(`/api/news/getnews?newsId=${newsId}`);
         const data = await response.json();
         setnewss(data.news[0]);
       } catch (error) {
         console.error(error);
       }
-    }
+    };
     fetchnews();
     fetchnewss();
-  }, [currentUser._id,newsId]);
+  }, [currentUser._id, newsId]);
   const navigate = useNavigate();
 
   return (
@@ -59,6 +59,7 @@ export default function EditNews() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
+                
               />
               <Icon.MoreHorizontal
                 size={20}
@@ -86,8 +87,8 @@ export default function EditNews() {
             {news &&
               news.map((newss) => (
                 <div
-                key={newss._id}
-                  onClick={() => navigate(`/recentnews/${newss._id}`)}
+                  key={newss._id}
+                  onClick={() => navigate(`/news/${newss._id}`)}
                   className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100"
                 >
                   <img
@@ -109,7 +110,7 @@ export default function EditNews() {
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
-          <NewsComponent newss={newss}/>
+          <NewsComponent news={newss} />
         </div>
       </div>
     </div>
