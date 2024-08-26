@@ -15,6 +15,8 @@ import EditNews from "./pages/EditNews";
 import AddNewNews from "./pages/AddNewNews";
 import EditCarousel from "./pages/EditCarousel";
 import AddNewCarousel from "./pages/AddNewCarousel";
+import AddNewGallery from "./pages/AddNewGallery";
+import EditGallery from "./pages/EditGallery";
 
 function App() {
   return (
@@ -43,10 +45,16 @@ function App() {
           <Route path="/news/:newsId" element={<EditNews />} />
         </Route>
         <Route element={<PrivateRoute />}>
+          <Route path="/gallery/:galleryId" element={<EditGallery />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
           <Route path="/carusel/:carouselId" element={<EditCarousel />} />
         </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/recentnotices/createnotice" element={<AddNewNotice />} />
+        </Route>
+        <Route element={<PrivateRoute />}>
+          <Route path="/gallery/creategallery" element={<AddNewGallery />} />
         </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/news/createnews" element={<AddNewNews />} />

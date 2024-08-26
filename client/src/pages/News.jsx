@@ -36,7 +36,7 @@ export default function RecentNotices() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer md:hidden"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/")}
               />
               <h1 className="text-sm font-semibold ">News</h1>
             </div>

@@ -8,180 +8,181 @@ import { formatDistanceToNow } from "date-fns";
 import { Button, Modal } from "flowbite-react";
 import { HiOutlineExclamationCircle } from "react-icons/hi";
 
-function CarouselComponent({carousel}) {
-  const { currentUser } = useSelector((state) => state.user);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [deleteModal, setDeleteModal] = useState(false);
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    description: "",
-    slug: "",
-    images: [],
-    imageUrls: [],
-  });
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [uploadProgress, setUploadProgress] = useState([]);
-  const [isFormValid, setIsFormValid] = useState(false);
+function GalleryComponent({gallery}) {
 
-  useEffect(() => {
-    if (carousel) {
-      setFormData({
-        description: carousel.description || "",
-        slug: carousel.slug || "",
-        images: [],
-        imageUrls: carousel.images || [], 
-      });
- 
-      if (carousel.images) {
-        setImagePreviews(carousel.images);
-        setUploadProgress(Array(carousel.images.length).fill(100));
-      }
-    }
-  }, [carousel]);
+    const { currentUser } = useSelector((state) => state.user);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [deleteModal, setDeleteModal] = useState(false);
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+      description: "",
+      slug: "",
+      images: [],
+      imageUrls: [],
+    });
+    const [imagePreviews, setImagePreviews] = useState([]);
+    const [uploadProgress, setUploadProgress] = useState([]);
+    const [isFormValid, setIsFormValid] = useState(false);
 
-  useEffect(() => {
-    const isValid =
-      (formData.description || "").trim() !== "" &&
-      (formData.slug || "").trim() !== "" &&
+    useEffect(() => {
+        if (gallery) {
+          setFormData({
+            description: gallery.description || "",
+            slug: gallery.slug || "",
+            images: [],
+            imageUrls: gallery.images || [], 
+          });
      
-      (formData.images.length > 0 || imagePreviews.length > 0) &&
-      uploadProgress.every((progress) => progress === 100);
+          if (gallery.images) {
+            setImagePreviews(gallery.images);
+            setUploadProgress(Array(gallery.images.length).fill(100));
+          }
+        }
+      }, [gallery]);
 
-    setIsFormValid(isValid);
-  }, [formData,  uploadProgress, imagePreviews]);
+      useEffect(() => {
+        const isValid =
+          (formData.description || "").trim() !== "" &&
+          (formData.slug || "").trim() !== "" &&
+         
+          (formData.images.length > 0 || imagePreviews.length > 0) &&
+          uploadProgress.every((progress) => progress === 100);
+    
+        setIsFormValid(isValid);
+      }, [formData,  uploadProgress, imagePreviews]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+      const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+      };
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    const newImagePreviews = files.map((file) => file);
-    setImagePreviews([...imagePreviews, ...newImagePreviews]);
-    setFormData({ ...formData, images: [...formData.images, ...files] });
-    setUploadProgress([...uploadProgress, ...Array(files.length).fill(0)]);
+      const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        const newImagePreviews = files.map((file) => file);
+        setImagePreviews([...imagePreviews, ...newImagePreviews]);
+        setFormData({ ...formData, images: [...formData.images, ...files] });
+        setUploadProgress([...uploadProgress, ...Array(files.length).fill(0)]);
+    
+        files.forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onloadstart = () =>
+            updateProgress(uploadProgress.length + index, 0);
+          reader.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const progress = (event.loaded / event.total) * 100;
+              updateProgress(uploadProgress.length + index, progress);
+            }
+          };
+          reader.onloadend = () =>
+            updateProgress(uploadProgress.length + index, 100);
+          reader.readAsDataURL(file);
+        });
+      };
 
-    files.forEach((file, index) => {
-      const reader = new FileReader();
-      reader.onloadstart = () =>
-        updateProgress(uploadProgress.length + index, 0);
-      reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = (event.loaded / event.total) * 100;
-          updateProgress(uploadProgress.length + index, progress);
+      const updateProgress = (index, progress) => {
+        setUploadProgress((prevProgress) => {
+          const newProgress = [...prevProgress];
+          newProgress[index] = progress;
+          return newProgress;
+        });
+      };
+
+      const handleRemoveImage = (index) => {
+        const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
+        const newImages = formData.images.filter((_, i) => i !== index);
+        const newImageUrls = formData.imageUrls.filter((_, i) => i !== index); 
+        const newUploadProgress = uploadProgress.filter((_, i) => i !== index);
+    
+        setImagePreviews(newImagePreviews);
+        setFormData({ ...formData, images: newImages, imageUrls: newImageUrls }); 
+        setUploadProgress(newUploadProgress);
+      };
+
+      const handleGenerateClick = (e) => {
+        e.preventDefault();
+        setFormData({
+          ...formData,
+          slug: formData.description.toLowerCase().replace(/ /g, "-"),
+        });
+      };
+
+      const handlePublish = async (e) => {
+        e.preventDefault();
+    
+        const galleryData = new FormData();
+        galleryData.append("description", formData.description);
+        galleryData.append("slug", formData.slug);
+        formData.images.forEach((image) => {
+            galleryData.append("images", image);
+        });
+        
+        galleryData.append(
+          "imageUrls",
+          JSON.stringify(imagePreviews.filter((image) => typeof image === "string"))
+        );
+    
+        try {
+          const response = await fetch(
+            `/api/gallery/updategallery/${gallery._id}/${gallery._id}`,
+            {
+              method: "PUT",
+              body: galleryData,
+            }
+          );
+    
+          if (response.ok) {
+            console.log("Gallery published successfully!");
+          } else {
+            console.error("Failed to publish gallery");
+          }
+        } catch (error) {
+          console.error("Error:", error);
         }
       };
-      reader.onloadend = () =>
-        updateProgress(uploadProgress.length + index, 100);
-      reader.readAsDataURL(file);
-    });
-  };
 
-  const updateProgress = (index, progress) => {
-    setUploadProgress((prevProgress) => {
-      const newProgress = [...prevProgress];
-      newProgress[index] = progress;
-      return newProgress;
-    });
-  };
-
-  const handleRemoveImage = (index) => {
-    const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
-    const newImages = formData.images.filter((_, i) => i !== index);
-    const newImageUrls = formData.imageUrls.filter((_, i) => i !== index); 
-    const newUploadProgress = uploadProgress.filter((_, i) => i !== index);
-
-    setImagePreviews(newImagePreviews);
-    setFormData({ ...formData, images: newImages, imageUrls: newImageUrls }); 
-    setUploadProgress(newUploadProgress);
-  };
-
-  const handleGenerateClick = (e) => {
-    e.preventDefault();
-    setFormData({
-      ...formData,
-      slug: formData.description.toLowerCase().replace(/ /g, "-"),
-    });
-  };
-
-  const handlePublish = async (e) => {
-    e.preventDefault();
-
-    const carouselData = new FormData();
-    carouselData.append("description", formData.description);
-    carouselData.append("slug", formData.slug);
-    formData.images.forEach((image) => {
-        carouselData.append("images", image);
-    });
+      const handleToggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen);
+      };
+      const handleDelete = async () => {
+        try {
+          const res = await fetch(
+            `/api/gallery/deletegallery/${gallery._id}/${currentUser._id}`,
+            {
+              method: "DELETE",
+            }
+          );
+          const data = await res.json();
+          if (!res.ok) {
+            console.log(data.message);
+          } else {
+            setDeleteModal(false);
+            navigate(-1);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      };
+      const handleSchedulePublish = () => {
+        console.log("Schedule Publish clicked");
+      };
     
-    carouselData.append(
-      "imageUrls",
-      JSON.stringify(imagePreviews.filter((image) => typeof image === "string"))
-    );
-
-    try {
-      const response = await fetch(
-        `/api/carouselitems/updatecarousel/${carousel._id}/${currentUser._id}`,
-        {
-          method: "PUT",
-          body: carouselData,
-        }
-      );
-
-      if (response.ok) {
-        console.log("Carousel published successfully!");
-      } else {
-        console.error("Failed to publish carousel");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const handleToggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-  const handleDelete = async () => {
-    try {
-      const res = await fetch(
-        `/api/carouselitems/deletecarousel/${carousel._id}/${currentUser._id}`,
-        {
-          method: "DELETE",
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        console.log(data.message);
-      } else {
-        setDeleteModal(false);
-        navigate(-1);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-  const handleSchedulePublish = () => {
-    console.log("Schedule Publish clicked");
-  };
-
 
 
   return (
     <div className="flex flex-col h-full">
     <div className="flex flex-row justify-between px-4 py-5 border-b-2">
-      <h1 className="text-sm font-semibold text-black">This is the Carousel</h1>
+      <h1 className="text-sm font-semibold text-black">This is the Gallery</h1>
       <Icon.X
         size={20}
         color="gray"
         strokeWidth={2}
         className="cursor-pointer"
-        onClick={() => navigate("/carusel")}
+        onClick={() => navigate("/gallery")}
       />
     </div>
     <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-100 px-16 my-5 flex flex-col items-start">
-      <h1 className="text-gray-600 text-sm font-normal">Carousels</h1>
-      <p className="text-3xl font-bold w-full mt-3">This is the carousel</p>
+      <h1 className="text-gray-600 text-sm font-normal">Gallery</h1>
+      <p className="text-3xl font-bold w-full mt-3">This is the gallery</p>
       <form
         className="mt-16 flex flex-col w-full gap-16"
         onSubmit={handlePublish}
@@ -191,7 +192,7 @@ function CarouselComponent({carousel}) {
             htmlFor="noticeTitle"
             className="text-gray-900 text-md font-semibold"
           >
-            Carousel Description
+            Gallery Description
           </label>
           <input
             type="text"
@@ -280,8 +281,8 @@ function CarouselComponent({carousel}) {
     </div>
     <div className="flex flex-row justify-between items-center px-6 py-2 border-t-2">
       <h1 className="text-sm font-semibold">
-        {carousel.createdAt
-          ? `Published ${formatDistanceToNow(new Date(carousel.createdAt))} ago`
+        {gallery.createdAt
+          ? `Published ${formatDistanceToNow(new Date(gallery.createdAt))} ago`
           : "Not Published"}
       </h1>
 
@@ -331,7 +332,7 @@ function CarouselComponent({carousel}) {
         <div className="text-center">
           <HiOutlineExclamationCircle className="h-14 w-14 mb-4 mx-auto text-gray-400 dark:text-gray-200" />
           <h3 className="mb-5 text-lg text-gray-500 dark:text-gray-400">
-            Are you sure you want to delete this carousel?
+            Are you sure you want to delete this gallery?
           </h3>
           <div className="flex justify-center gap-4">
             <Button color="failure" onClick={handleDelete}>
@@ -348,4 +349,4 @@ function CarouselComponent({carousel}) {
   )
 }
 
-export default CarouselComponent
+export default GalleryComponent

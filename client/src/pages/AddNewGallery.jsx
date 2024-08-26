@@ -2,33 +2,36 @@ import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import * as Icon from "react-feather";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import CreateGallery from "../components/CreateGallery";
 
-export default function RecentNotices() {
-  const { currentUser } = useSelector((state) => state.user);
-  const [notices, setNotices] = useState([]);
+function AddNewGallery() {
+    const { currentUser } = useSelector((state) => state.user);
+    const [gallery, setGallery] = useState([]);
 
-  useEffect(() => {
-    const fetchNotices = async () => {
-      try {
-        const response = await fetch("/api/recentnotices/getnotices");
-        const data = await response.json();
-        setNotices(data.notices);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchNotices();
-  }, [currentUser._id]);
-
-  const navigate = useNavigate();
+    const { galleryId } = useParams();
+    useEffect(() => {
+        const fetchGallery = async () => {
+          try {
+            const response = await fetch("/api/gallery/getgallery");
+            const data = await response.json();
+            setCarousels(data.gallery);
+          } catch (error) {
+            console.error(error);
+          }
+        };
+        
+        fetchGallery();
+       
+      }, [currentUser._id, galleryId]);
+      const navigate = useNavigate();
   return (
     <div className="bg-white w-full h-screen flex flex-col">
       <Navbar />
-      <div className="flex-1 flex flex-row ">
-        <Sidebar select={"recentnotices"} />
-        <div className={" flex-1 w-full sm:max-w-sm sm:border-r-2 "}>
+      <div className="flex flex-row flex-1 overflow-hidden">
+        <Sidebar select={"gallery"} />
+        <div className="hidden sm:flex flex-col w-full sm:max-w-sm sm:border-r-2">
           <div className="p-3 flex flex-row justify-between items-center">
             <div className="flex flex-row flex-1 gap-2">
               <Icon.ArrowLeft
@@ -36,18 +39,16 @@ export default function RecentNotices() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer md:hidden"
-                onClick={() => navigate("/")}
+                onClick={() => navigate(-1)}
               />
-              <h1 className="text-sm font-semibold ">Recent Notices</h1>
+              <h1 className="text-sm font-semibold">Gallery</h1>
             </div>
-
             <div className="flex flex-row gap-3">
               <Icon.Plus
                 size={20}
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
-                onClick={() => navigate("createnotice")}
               />
               <Icon.MoreHorizontal
                 size={20}
@@ -71,33 +72,35 @@ export default function RecentNotices() {
               className="w-full pl-8 pr-2 py-1 outline-none text-sm border-none"
             />
           </div>
-          <div className="mt-4 mx-3 flex flex-col gap-2">
-            {notices &&
-              notices.map((notice) => (
+          <div className="mt-4 mx-3 flex flex-col gap-2 overflow-auto">
+            {gallery &&
+              gallery.map((gallery) => (
                 <div
-                  key={notice._id}
-                  onClick={() => navigate(`${notice._id}`)}
+                  key={gallery._id}
+                  onClick={() => navigate(`/gallery/${gallery._id}`)}
                   className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100"
                 >
                   <img
-                    src={`/${notice.images[0]}`}
+                    src={`/${gallery.images[0]}`}
                     alt=""
                     className="h-10 w-10"
                   />
                   <div className="flex-1">
                     <p className="  line-clamp-1 px-1 text-sm text-gray-800">
-                      {notice.title}
+                      {gallery.description}
                     </p>
-                    <p className="line-clamp-1 px-1 text-xs text-gray-600">
-                      <span className="">Slug :</span>
-                      {notice.slug}
-                    </p>
+                
                   </div>
                 </div>
               ))}
           </div>
         </div>
+        <div className="flex-1 overflow-hidden">
+          <CreateGallery />
+        </div>
       </div>
     </div>
-  );
+  )
 }
+
+export default AddNewGallery
