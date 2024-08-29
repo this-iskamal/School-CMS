@@ -16,7 +16,7 @@ function AddNewGallery() {
           try {
             const response = await fetch("/api/gallery/getgallery");
             const data = await response.json();
-            setCarousels(data.gallery);
+            setGallery(data.gallery);
           } catch (error) {
             console.error(error);
           }

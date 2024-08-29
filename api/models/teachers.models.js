@@ -1,12 +1,5 @@
 import mongoose from "mongoose";
 
-const subjectSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-});
-
 const teacherSchema = new mongoose.Schema(
   {
     name: {
@@ -25,7 +18,7 @@ const teacherSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    teachingSubjects: [subjectSchema],
+
   },
   {
     timestamps: true,
@@ -34,4 +27,4 @@ const teacherSchema = new mongoose.Schema(
 
 const Teacher = mongoose.model("Teacher", teacherSchema);
 
-export default Teacher
+export default Teacher;

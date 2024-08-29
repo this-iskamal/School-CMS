@@ -4,43 +4,33 @@ import Sidebar from "../components/Sidebar";
 import * as Icon from "react-feather";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import GalleryComponent from "../components/GalleryComponent";
+import CreateNotice from "../components/CreateNotice";
+import CreateTeacher from "../components/CreateTeacher";
 
-function EditGallery() {
-    const { currentUser } = useSelector((state) => state.user);
-    const [gallerys, setGallerys] = useState([]);
-    const [gallery , setGallery] = useState({});
-    const {galleryId} = useParams();
-    const navigate = useNavigate();
+function AddNewTeacher() {
+  const { currentUser } = useSelector((state) => state.user);
+  const [teachers, setTeachers] = useState([]);
+  const { teacherId } = useParams();
 
-    useEffect(() => {
-        const fetchGallerys = async () => {
-          try {
-            const response = await fetch("/api/gallery/getgallery");
-            const data = await response.json();
-            setGallerys(data.gallery);
-          } catch (error) {
-            console.error(error);
-          }
-        };
-        const fetchGallery = async () => {
-          try {
-            const response = await fetch(`/api/gallery/getgallery?galleryId=${galleryId}`);
-            const data = await response.json();
-            setGallery(data.gallery[0]);
-          } catch (error) {
-            console.error(error);
-          }
-        }
-        fetchGallerys();
-        fetchGallery();
-      }, [currentUser._id,galleryId]);
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const response = await fetch("/api/teachers/getteachers");
+        const data = await response.json();
+        setTeachers(data.teachers);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
+    fetchTeachers();
+  }, [currentUser._id, teacherId]);
+  const navigate = useNavigate();
   return (
     <div className="bg-white w-full h-screen flex flex-col">
       <Navbar />
       <div className="flex flex-row flex-1 overflow-hidden">
-        <Sidebar select={"gallery"} />
+        <Sidebar select={"teachers"} />
         <div className="hidden sm:flex flex-col w-full sm:max-w-sm sm:border-r-2">
           <div className="p-3 flex flex-row justify-between items-center">
             <div className="flex flex-row flex-1 gap-2">
@@ -51,7 +41,7 @@ function EditGallery() {
                 className="cursor-pointer md:hidden"
                 onClick={() => navigate(-1)}
               />
-              <h1 className="text-sm font-semibold">Gallery</h1>
+              <h1 className="text-sm font-semibold">Teachers</h1>
             </div>
             <div className="flex flex-row gap-3">
               <Icon.Plus
@@ -59,7 +49,6 @@ function EditGallery() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
-                onClick={()=>navigate("/gallery/creategallery")}
               />
               <Icon.MoreHorizontal
                 size={20}
@@ -84,25 +73,25 @@ function EditGallery() {
             />
           </div>
           <div className="mt-4 mx-3 flex flex-col gap-2 overflow-auto">
-            {gallerys &&
-              gallerys.map((gallery) => (
+            {teachers &&
+              teachers.map((teacher) => (
                 <div
-                key={gallery._id}
-                  onClick={() => navigate(`/gallery/${galleryId._id}`)}
+                  key={teacher._id}
+                  onClick={() => navigate(`/teachers/${teacher._id}`)}
                   className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100"
                 >
                   <img
-                    src={`/${gallery.images[0]}`}
+                    src={`/${teacher.profilePicture}`}
                     alt=""
-                    className="h-10 w-10"
+                    className="h-10 w-10 rounded-full"
                   />
                   <div className="flex-1">
                     <p className="  line-clamp-1 px-1 text-sm text-gray-800">
-                      {gallery.description}
+                      {teacher.name}
                     </p>
                     <p className="line-clamp-1 px-1 text-xs text-gray-600">
-                      <span className="">Slug :</span>
-                      {gallery.slug}
+                    
+                      {teacher.position}
                     </p>
                   </div>
                 </div>
@@ -110,11 +99,11 @@ function EditGallery() {
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
-          <GalleryComponent gallery={gallery}/>
+          <CreateTeacher />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default EditGallery
+export default AddNewTeacher;

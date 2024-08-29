@@ -2,8 +2,7 @@ import fs from "fs";
 import multer from "multer";
 import path from "path";
 import { errorHandler } from "../utlis/error.js";
-import Teacher from "../models/teacher.models.js";
-import { error } from "console";
+import Teacher from "../models/teachers.models.js";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -22,12 +21,7 @@ export const addNewTeacher = [
     if (!req.user.isAdmin) {
       return next(errorHandler(403, "You are not allowed to add teacher"));
     }
-    if (
-      !req.body.name ||
-      !req.body.address ||
-      !req.body.position ||
-      !req.body.teachingSubjects
-    ) {
+    if (!req.body.name || !req.body.address || !req.body.position) {
       return next(errorHandler(400, "Please provide all the fields"));
     }
 
@@ -36,7 +30,6 @@ export const addNewTeacher = [
       address: req.body.address,
       position: req.body.position,
       profilePicture: req.file.path,
-      teachingSubjects: JSON.parse(req.body.teachingSubjects),
     });
 
     try {
@@ -65,14 +58,16 @@ export const getTeachers = async (req, res, next) => {
       .skip(startIndex)
       .limit(limit)
       .sort({ createdAt: sortDirection });
-    res.status(200).json(teachers);
+
+    const totalTeachers = await Teacher.countDocuments();
+    res.status(200).json({ teachers, totalTeachers });
   } catch (error) {
     next(error);
   }
 };
 
 export const deleteTeacher = async (req, res, next) => {
-  if (!req.user.isAdmin || req.user.id !== req.params.teacherId) {
+  if (!req.user.isAdmin || req.user.id !== req.params.userId) {
     return next(errorHandler(403, "You are not allowed to delete teacher"));
   }
 
@@ -99,55 +94,27 @@ export const deleteTeacher = async (req, res, next) => {
   }
 };
 
-export const updateTeacher = [
-  upload.single("profilePicture"),
-  async (req, res, next) => {
-    if (!req.user.isAdmin) {
-      return next(errorHandler(403, "You are not allowed to update teacher"));
+export const updateTeacher = async (req, res, next) => {
+  if (!req.user.isAdmin) {
+    return next(errorHandler(403, "You are not allowed to update teacher"));
+  }
+  if (!req.body.name || !req.body.address || !req.body.position) {
+    return next(errorHandler(400, "Please provide all the fields"));
+  }
+
+  try {
+    const teacher = await Teacher.findById(req.params.teacherId);
+    if (!teacher) {
+      return next(errorHandler(404, "Teacher not found"));
     }
-    if (
-      !req.body.name ||
-      !req.body.address ||
-      !req.body.position ||
-      !req.body.teachingSubjects
-    ) {
-      return next(errorHandler(400, "Please provide all the fields"));
-    }
 
-    try {
-      const teacher = await Teacher.findById(req.params.teacherId);
-      if (!teacher) {
-        return next(errorHandler(404, "Teacher not found"));
-      }
+    teacher.name = req.body.name;
+    teacher.address = req.body.address;
+    teacher.position = req.body.position;
 
-      const newImagePath = req.file.path;
-      const imageUrl = JSON.parse(req.body.imageUrl);
-      const existingImage = Teacher.profilePicture;
-
-      const updatedImage = [...imageUrl, ...newImagePath];
-
-      teacher.name = req.body.name;
-      teacher.address = req.body.address;
-      teacher.position = req.body.position;
-      teacher.profilePicture = updatedImage;
-      teacher.teachingSubjects = JSON.parse(req.body.teachingSubjects);
-
-      const imagesToDelete = existingImage.filter(
-        (imagePath) => !imageUrl.includes(imagePath)
-      );
-      imagesToDelete.forEach((imagePath) => {
-        const fullPath = path.resolve(imagePath);
-        fs.unlink(fullPath, (err) => {
-          if (err) {
-            console.error(`Failed to delete image at ${fullPath}: ${err}`);
-          }
-        });
-      });
-
-      const updatedTeacher = await teacher.save();
-      res.status(200).json(updatedTeacher);
-    } catch (error) {
-      next(error);
-    }
-  },
-];
+    const updatedTeacher = await teacher.save();
+    res.status(200).json(updatedTeacher);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,10 +1,27 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 export default function Teachers() {
+  const { currentUser } = useSelector((state) => state.user);
+  const [teachers, setTeachers] = useState([]);
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const response = await fetch("/api/teachers/getteachers");
+        const data = await response.json();
+        setTeachers(data.teachers);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchTeachers();
+  }, [currentUser._id]);
+
   const navigate = useNavigate();
   return (
     <div className="bg-white w-full h-screen flex flex-col">
@@ -18,17 +35,19 @@ export default function Teachers() {
                 size={20}
                 color="gray"
                 strokeWidth={1.5}
-                className="cursor-pointer"
-                onClick={() => navigate(-1)}
+                className="cursor-pointer md:hidden"
+                onClick={() => navigate("/")}
               />
               <h1 className="text-sm font-semibold ">Teachers</h1>
             </div>
+
             <div className="flex flex-row gap-3">
               <Icon.Plus
                 size={20}
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
+                onClick={() => navigate("createteacher")}
               />
               <Icon.MoreHorizontal
                 size={20}
@@ -53,32 +72,29 @@ export default function Teachers() {
             />
           </div>
           <div className="mt-4 mx-3 flex flex-col gap-2">
-            <div className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100">
-              <img src="src/assets/profile.png" alt="" className="h-10 w-10" />
-              <div className="flex-1">
-                <p className="line-clamp-1 px-1 text-sm text-gray-800">
-                  स्नातक तह चाैथाै वर्षकाे परीक्षा िदने परीक्षार्थीहरुकाे लागि
-                  परीक्षा अावेदन तथा छात्रवृत्ती Form भर्ने सुचना
-                </p>
-                <p className="line-clamp-1 px-1 text-xs text-gray-600">
-                  <span className="">Slug :</span>
-                  स्नातक-तह-चाैथाै-वर्षकाे-परीक्षा-िदने-परीक्षार्थीहरुकाे-लागि-परीक्षा-अावेदन-तथा-छात्रवृत्ती-form
-                </p>
-              </div>
-            </div>
-            <div className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100">
-              <img src="src/assets/profile.png" alt="" className="h-10 w-10" />
-              <div className="flex-1">
-                <p className="line-clamp-1 px-1 text-sm text-gray-800">
-                  स्नातक तह चाैथाै वर्षकाे परीक्षा िदने परीक्षार्थीहरुकाे लागि
-                  परीक्षा अावेदन तथा छात्रवृत्ती Form भर्ने सुचना
-                </p>
-                <p className="line-clamp-1 px-1 text-xs text-gray-600">
-                  <span className="">Slug :</span>
-                  स्नातक-तह-चाैथाै-वर्षकाे-परीक्षा-िदने-परीक्षार्थीहरुकाे-लागि-परीक्षा-अावेदन-तथा-छात्रवृत्ती-form
-                </p>
-              </div>
-            </div>
+            {teachers &&
+              teachers.map((teacher) => (
+                <div
+                  key={teacher._id}
+                  onClick={() => navigate(`${teacher._id}`)}
+                  className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100"
+                >
+                  <img
+                    src={`/${teacher.profilePicture}`}
+                    alt=""
+                    className="h-10 w-10 rounded-full"
+                  />
+                  <div className="flex-1 ">
+                    <p className="  line-clamp-1 px-1 text-sm text-gray-800">
+                      {teacher.name}
+                    </p>
+                    <p className="line-clamp-1 px-1 text-xs text-gray-600">
+                      
+                      {teacher.position}
+                    </p>
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       </div>

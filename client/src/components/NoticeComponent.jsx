@@ -132,6 +132,7 @@ export default function NoticeComponent({ notice }) {
         }
       );
 
+
       if (response.ok) {
         console.log("Notice published successfully!");
       } else {
