@@ -7,6 +7,9 @@ import { useSelector } from "react-redux";
 import { formatDistanceToNow } from "date-fns";
 import { Button, Modal } from "flowbite-react";
 import { HiOutlineExclamationCircle } from "react-icons/hi";
+import { toast, ToastContainer } from "react-toastify"; 
+import "react-quill/dist/quill.snow.css";
+import "react-toastify/dist/ReactToastify.css";
 
 function CarouselComponent({carousel}) {
   const { currentUser } = useSelector((state) => state.user);
@@ -20,6 +23,7 @@ function CarouselComponent({carousel}) {
     imageUrls: [],
   });
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState([]);
   const [isFormValid, setIsFormValid] = useState(false);
 
@@ -107,6 +111,9 @@ function CarouselComponent({carousel}) {
 
   const handlePublish = async (e) => {
     e.preventDefault();
+    if (isPublishing) return; 
+
+    setIsPublishing(true);
 
     const carouselData = new FormData();
     carouselData.append("description", formData.description);
@@ -130,12 +137,20 @@ function CarouselComponent({carousel}) {
       );
 
       if (response.ok) {
-        console.log("Carousel published successfully!");
+        toast.success("Carousel published successfully!");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
-        console.error("Failed to publish carousel");
+        toast.error("Failed to publish carousel");
+
       }
     } catch (error) {
+      toast.error("Failed to publish carousel");
+
       console.error("Error:", error);
+    }finally {
+      setIsPublishing(false);
     }
   };
 
@@ -152,13 +167,16 @@ function CarouselComponent({carousel}) {
       );
       const data = await res.json();
       if (!res.ok) {
+        toast.error(data.message);
         console.log(data.message);
       } else {
         setDeleteModal(false);
-        navigate(-1);
+        navigate("/carouselitems");
       }
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Failed to delete notice");
+      
     }
   };
   const handleSchedulePublish = () => {
@@ -169,6 +187,7 @@ function CarouselComponent({carousel}) {
 
   return (
     <div className="flex flex-col h-full">
+      <ToastContainer />
     <div className="flex flex-row justify-between px-4 py-5 border-b-2">
       <h1 className="text-sm font-semibold text-black">This is the Carousel</h1>
       <Icon.X
@@ -289,14 +308,14 @@ function CarouselComponent({carousel}) {
         <div className="flex flex-row items-center gap-2">
           <button
             className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-              isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+              isFormValid&&!isPublishing ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
             }`}
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid || isPublishing}
             onClick={handlePublish}
           >
             <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-            <span className="text-xs font-semibold">Publish</span>
+            <span className="text-xs font-semibold">{isPublishing?"Publising...":"Publish"}</span>
           </button>
           <div onClick={handleToggleDropdown} className="cursor-pointer">
             <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />

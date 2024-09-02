@@ -3,107 +3,126 @@ import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { toast, ToastContainer } from "react-toastify"; 
+import "react-quill/dist/quill.snow.css";
+import "react-toastify/dist/ReactToastify.css";
 
 function CreateGallery() {
-    const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-      description:"",
-      slug: "",
-      images: [],
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    description: "",
+    slug: "",
+    images: [],
+  });
+
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState([]);
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const isValid =
+      formData.slug.trim() !== "" &&
+      formData.description.trim() !== "" &&
+      formData.images.length > 0 &&
+      uploadProgress.every((progress) => progress === 100);
+
+    setIsFormValid(isValid);
+  }, [formData, uploadProgress]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const previewUrls = files.map((file) => URL.createObjectURL(file));
+    setImagePreviews(previewUrls);
+    setFormData({ ...formData, images: files });
+    setUploadProgress(Array(files.length).fill(0));
+
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onloadstart = () => updateProgress(index, 0);
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 100;
+          updateProgress(index, progress);
+        }
+      };
+      reader.onloadend = () => updateProgress(index, 100);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const updateProgress = (index, progress) => {
+    setUploadProgress((prevProgress) => {
+      const newProgress = [...prevProgress];
+      newProgress[index] = progress;
+      return newProgress;
+    });
+  };
+
+  const handleGenerateClick = (e) => {
+    e.preventDefault();
+    setFormData({
+      ...formData,
+      slug: formData.description.toLowerCase().replace(/ /g, "-"),
+    });
+  };
+
+  const handlePublish = async (e) => {
+    e.preventDefault();
+    if (isPublishing) return;
+
+    setIsPublishing(true);
+
+    const galleryData = new FormData();
+    galleryData.append("description", formData.description);
+    galleryData.append("slug", formData.slug);
+    formData.images.forEach((image) => {
+      galleryData.append("images", image);
     });
 
-    const [imagePreviews, setImagePreviews] = useState([]);
-    const [uploadProgress, setUploadProgress] = useState([]);
-    const [isFormValid, setIsFormValid] = useState(false);
-    const [error, setError] = useState("");
+    try {
+      const response = await fetch("/api/gallery/addnewgallery", {
+        method: "POST",
+        body: galleryData,
+      });
 
-    useEffect(() => {
-        const isValid =
-        formData.slug.trim() !== "" &&
-          formData.description.trim() !== "" &&
-          formData.images.length > 0 &&
-          uploadProgress.every((progress) => progress === 100);
-    
-        setIsFormValid(isValid);
-      }, [formData, uploadProgress]);
+      if (response.ok) {
+        toast.success("Gallery published successfully!");
+        setTimeout(() => {
+          navigate(-1);
+        }, 2000);
+      } else {
+        setError("Failed to publish carousel");
+        if (response.message === "Unauthenticated User") {
+          setError("Unauthenticated User. Please login to continue.");
+          toast.error("Unauthenticated User. Please login to continue.");
+          navigate("/sign-in");
+        }
 
-      const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-      };
-
-      const handleImageChange = (e) => {
-        const files = Array.from(e.target.files);
-        const previewUrls = files.map((file) => URL.createObjectURL(file));
-        setImagePreviews(previewUrls);
-        setFormData({ ...formData, images: files });
-        setUploadProgress(Array(files.length).fill(0));
-    
-        files.forEach((file, index) => {
-          const reader = new FileReader();
-          reader.onloadstart = () => updateProgress(index, 0);
-          reader.onprogress = (event) => {
-            if (event.lengthComputable) {
-              const progress = (event.loaded / event.total) * 100;
-              updateProgress(index, progress);
-            }
-          };
-          reader.onloadend = () => updateProgress(index, 100);
-          reader.readAsDataURL(file);
-        });
-      };
-
-      
-      const updateProgress = (index, progress) => {
-        setUploadProgress((prevProgress) => {
-          const newProgress = [...prevProgress];
-          newProgress[index] = progress;
-          return newProgress;
-        });
-      };
-    
-      const handleGenerateClick = (e) => {
-        e.preventDefault();
-        setFormData({
-          ...formData,
-          slug: formData.description.toLowerCase().replace(/ /g, "-"),
-        });
-      };
-
-      const handlePublish = async (e) => {
-        e.preventDefault();
-    
-        const galleryData = new FormData();
-        galleryData.append("description", formData.description);
-        galleryData.append("slug", formData.slug);
-        formData.images.forEach((image) => {
-          galleryData.append("images", image);
-        });
-
-        try {
-            const response = await fetch("/api/gallery/addnewgallery", {
-              method: "POST",
-              body: galleryData,
-            });
-      
-            if (response.ok) {
-              console.log("Carousel published successfully!");
-            } else {
-              setError("Failed to publish carousel");
-              if (response.message === "Unauthenticated User")
-                setError("Unauthenticated User. Please login to continue.");
-              console.log(response);
-            }
-          } catch (error) {
-            console.error("Error:", error);
-          }
-        };
-
+        console.log(response);
+        toast.error("Error occurred while publishing the gallery.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error occurred while publishing the gallery.");
+    }finally {
+      setIsPublishing(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
+      <ToastContainer />
       <div className="flex flex-row justify-between px-4 py-5 border-b-2">
-        <h1 className="text-sm font-semibold text-black">This is the Gallery</h1>
+        <h1 className="text-sm font-semibold text-black">
+          This is the Gallery
+        </h1>
         <Icon.X
           size={20}
           color="gray"
@@ -159,7 +178,7 @@ function CreateGallery() {
               </button>
             </div>
           </div>
-          
+
           <div className="flex flex-col gap-2">
             <label
               htmlFor="imageUpload"
@@ -205,20 +224,20 @@ function CreateGallery() {
         <div className="flex flex-row items-center gap-2">
           <button
             className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-              isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+              isFormValid&&!isPublishing ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
             }`}
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid||isPublishing}
             onClick={handlePublish}
           >
             <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-            <span className="text-xs font-semibold">Publish</span>
+            <span className="text-xs font-semibold">{isPublishing?"Publishing...":"Publish"}</span>
           </button>
           <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default CreateGallery
+export default CreateGallery;

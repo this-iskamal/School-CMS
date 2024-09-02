@@ -19,6 +19,8 @@ import AddNewGallery from "./pages/AddNewGallery";
 import EditGallery from "./pages/EditGallery";
 import AddNewTeacher from "./pages/AddNewTeacher";
 import EditTeacher from "./pages/EditTeacher";
+import ForgotPassword from "./pages/ForgotPassword";
+import PasswordResetPage from "./pages/PasswordResetPage";
 
 function App() {
   return (
@@ -75,6 +77,8 @@ function App() {
         </Route>
 
         <Route path="/sign-in" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/password-reset" element={<PasswordResetPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

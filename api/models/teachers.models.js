@@ -18,7 +18,10 @@ const teacherSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
+    phonenumber: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,

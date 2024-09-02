@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-quill/dist/quill.snow.css";
+import "react-toastify/dist/ReactToastify.css";
 
 function CreateTeacher() {
   const navigate = useNavigate();
@@ -8,11 +11,13 @@ function CreateTeacher() {
     name: "",
     position: "",
     address: "",
+    phonenumber: "",
     image: null,
   });
 
-  const [imagePreview, setImagePreview] = useState(null); 
-  const [uploadProgress, setUploadProgress] = useState(0); 
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isFormValid, setIsFormValid] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,6 +26,7 @@ function CreateTeacher() {
       formData.name.trim() !== "" &&
       formData.position.trim() !== "" &&
       formData.address.trim() !== "" &&
+      formData.phonenumber.trim() !== "" &&
       formData.image !== null &&
       uploadProgress === 100;
 
@@ -57,12 +63,15 @@ function CreateTeacher() {
 
   const handlePublish = async (e) => {
     e.preventDefault();
+    if (isPublishing) return;
+    setIsPublishing(true);
 
     const teacherData = new FormData();
     teacherData.append("name", formData.name);
     teacherData.append("position", formData.position);
     teacherData.append("address", formData.address);
     teacherData.append("profilePicture", formData.image);
+    teacherData.append("phonenumber", formData.phonenumber);
 
     try {
       const response = await fetch("/api/teachers/addnewteacher", {
@@ -71,22 +80,36 @@ function CreateTeacher() {
       });
 
       if (response.ok) {
-        console.log("Teacher published successfully!");
+        toast.success("Notice published successfully!");
+        setTimeout(() => {
+          navigate(-1);
+        }, 2000);
       } else {
         setError("Failed to publish teacher");
-        if (response.message === "Unauthenticated User")
+        if (response.message === "Unauthenticated User") {
           setError("Unauthenticated User. Please login to continue.");
+          toast.error("Unauthenticated User. Please login to continue.");
+          navigate("/sign-in");
+        }
+
         console.log(response);
+        toast.error("Error occurred while publishing the teacher.");
       }
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Error occurred while publishing the teacher.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
   return (
     <div className="flex flex-col h-full">
+      <ToastContainer />
       <div className="flex flex-row justify-between px-4 py-5 border-b-2">
-        <h1 className="text-sm font-semibold text-black">This is the teacher</h1>
+        <h1 className="text-sm font-semibold text-black">
+          This is the teacher
+        </h1>
         <Icon.X
           size={20}
           color="gray"
@@ -150,6 +173,22 @@ function CreateTeacher() {
               className="w-full border-2 px-3 py-1 text-md text-gray-800 outline-blue-500 rounded-sm"
             />
           </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="phonenumber"
+              className="text-gray-900 text-md font-semibold"
+            >
+              Phone Number
+            </label>
+            <input
+              type="text"
+              name="phonenumber"
+              id="phonenumber"
+              value={formData.phonenumber}
+              onChange={handleInputChange}
+              className="w-full border-2 px-3 py-1 text-md text-gray-800 outline-blue-500 rounded-sm"
+            />
+          </div>
 
           <div className="flex flex-col gap-2">
             <label
@@ -193,14 +232,18 @@ function CreateTeacher() {
         <div className="flex flex-row items-center gap-2">
           <button
             className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-              isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+              isFormValid && !isPublishing
+                ? "bg-gray-100"
+                : "bg-gray-300 cursor-not-allowed"
             }`}
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid || isPublishing}
             onClick={handlePublish}
           >
             <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-            <span className="text-xs font-semibold">Publish</span>
+            <span className="text-xs font-semibold">
+              {isPublishing ? "Publishing..." : "Publish"}
+            </span>
           </button>
           <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
         </div>

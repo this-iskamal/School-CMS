@@ -4,9 +4,25 @@ import path from "path";
 import { errorHandler } from "../utlis/error.js";
 import CarouselItems from "../models/carouselItems.models.js";
 
+const uploadPath = 'api/uploads/carousel';
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "api/uploads/carousel");
+
+    fs.access(uploadPath, fs.constants.F_OK, (err) => {
+      if (err) {
+
+        fs.mkdir(uploadPath, { recursive: true }, (err) => {
+          if (err) {
+            return cb(err);
+          }
+          cb(null, uploadPath);
+        });
+      } else {
+
+        cb(null, uploadPath);
+      }
+    });
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));

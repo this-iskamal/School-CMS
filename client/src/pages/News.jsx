@@ -8,6 +8,10 @@ import { useSelector } from "react-redux";
 export default function RecentNotices() {
   const { currentUser } = useSelector((state) => state.user);
   const [news, setNews] = useState([]);
+  const [options, setOptions] = useState(false);
+  const [sortCriteria, setSortCriteria] = useState(null);
+  const [filteredNews, setFilteredNews] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchNotices = async () => {
@@ -15,6 +19,7 @@ export default function RecentNotices() {
         const response = await fetch("/api/news/getnews");
         const data = await response.json();
         setNews(data.news);
+        setFilteredNews(data.news);
       } catch (error) {
         console.error(error);
       }
@@ -23,6 +28,32 @@ export default function RecentNotices() {
   }, [currentUser._id]);
 
   const navigate = useNavigate();
+  
+  const sortNews = (criteria) => {
+    const sortedNews = [...filteredNews];
+    if (criteria === "title") {
+      sortedNews.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (criteria === "created") {
+      sortedNews.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    } else if (criteria === "lastEdited") {
+      sortedNews.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    }
+    setFilteredNews(sortedNews);
+    setSortCriteria(criteria);
+  };
+
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+  
+    const filtered = news.filter((news) =>
+      news.title.toLowerCase().includes(term) ||
+      news.slug.toLowerCase().includes(term)
+    );
+    console.log(filtered)
+    setFilteredNews(filtered);
+  };
+
   return (
     <div className="bg-white w-full h-screen flex flex-col">
       <Navbar />
@@ -41,7 +72,7 @@ export default function RecentNotices() {
               <h1 className="text-sm font-semibold ">News</h1>
             </div>
 
-            <div className="flex flex-row gap-3">
+            <div className="flex flex-row gap-3 relative">
               <Icon.Plus
                 size={20}
                 color="gray"
@@ -54,7 +85,33 @@ export default function RecentNotices() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
-              />
+                onClick={() => setOptions(!options)}
+                />
+                {options && (
+                  <div className="absolute top-5 -right-2 w-40 z-10 bg-white border shadow-md rounded-md flex flex-col gap-2">
+                    <div
+                      className="p-2 flex justify-start items-center flex-row  mt-1 rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                      onClick={() => sortNews("title")}
+                    >
+                      <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                      <span>Sort By Title</span>
+                    </div>
+                    <div
+                      className="p-2 flex justify-start items-center flex-row rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                      onClick={() => sortNews("created")}
+                    >
+                      <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                      <span>Sort By Created</span>
+                    </div>
+                    <div
+                      className="p-2 flex justify-start items-center flex-row mb-1 rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                      onClick={() => sortNews("lastEdited")}
+                    >
+                      <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                      <span>Sort By Last Edited</span>
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
           <div className="relative mx-3 my-1 px-1 border flex items-center focus-within:border-blue-500 rounded-md">
@@ -69,11 +126,13 @@ export default function RecentNotices() {
             <input
               placeholder="Search"
               className="w-full pl-8 pr-2 py-1 outline-none text-sm border-none"
+              onChange={handleSearch}
+
             />
           </div>
           <div className="mt-4 mx-3 flex flex-col gap-2">
-            {news &&
-              news.map((news) => (
+            {filteredNews &&
+              filteredNews.map((news) => (
                 <div key={news._id} onClick={()=>navigate(`${news._id}`)} className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100">
                   <img
                     src={`/${news.images[0]}`}

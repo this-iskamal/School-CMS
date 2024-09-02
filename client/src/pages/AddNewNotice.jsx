@@ -11,7 +11,12 @@ export default function AddNewNotice() {
   const { currentUser } = useSelector((state) => state.user);
   const [notices, setNotices] = useState([]);
   const [notice, setNotice] = useState({});
+  const [options, setOptions] = useState(false);
+  const [sortCriteria, setSortCriteria] = useState(null);
   const { noticeId } = useParams();
+  const navigate = useNavigate();
+  const [filteredNotices, setFilteredNotices] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchNotices = async () => {
@@ -19,15 +24,44 @@ export default function AddNewNotice() {
         const response = await fetch("/api/recentnotices/getnotices");
         const data = await response.json();
         setNotices(data.notices);
+        setFilteredNotices(data.notices);
       } catch (error) {
         console.error(error);
       }
     };
-    
+
     fetchNotices();
-   
   }, [currentUser._id, noticeId]);
-  const navigate = useNavigate();
+
+  const sortNotices = (criteria) => {
+    const sortedNotices = [...filteredNotices];
+    if (criteria === "title") {
+      sortedNotices.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (criteria === "created") {
+      sortedNotices.sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+    } else if (criteria === "lastEdited") {
+      sortedNotices.sort(
+        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      );
+    }
+    setFilteredNotices(sortedNotices);
+    setSortCriteria(criteria);
+  };
+
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+
+    const filtered = notices.filter(
+      (notice) =>
+        notice.title.toLowerCase().includes(term) ||
+        notice.slug.toLowerCase().includes(term)
+    );
+
+    setFilteredNotices(filtered);
+  };
 
   return (
     <div className="bg-white w-full h-screen flex flex-col">
@@ -46,7 +80,7 @@ export default function AddNewNotice() {
               />
               <h1 className="text-sm font-semibold">Recent Notices</h1>
             </div>
-            <div className="flex flex-row gap-3">
+            <div className="flex flex-row gap-3 relative">
               <Icon.Plus
                 size={20}
                 color="gray"
@@ -58,7 +92,33 @@ export default function AddNewNotice() {
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
+                onClick={() => setOptions(!options)}
               />
+              {options && (
+                <div className="absolute top-5 -right-2 w-40 z-10 bg-white border shadow-md rounded-md flex flex-col gap-2">
+                  <div
+                    className="p-2 flex justify-start items-center flex-row  mt-1 rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                    onClick={() => sortNotices("title")}
+                  >
+                    <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                    <span>Sort By Title</span>
+                  </div>
+                  <div
+                    className="p-2 flex justify-start items-center flex-row rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                    onClick={() => sortNotices("created")}
+                  >
+                    <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                    <span>Sort By Created</span>
+                  </div>
+                  <div
+                    className="p-2 flex justify-start items-center flex-row mb-1 rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                    onClick={() => sortNotices("lastEdited")}
+                  >
+                    <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                    <span>Sort By Last Edited</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="relative mx-3 my-1 px-1 border flex items-center focus-within:border-blue-500 rounded-md">
@@ -73,11 +133,13 @@ export default function AddNewNotice() {
             <input
               placeholder="Search"
               className="w-full pl-8 pr-2 py-1 outline-none text-sm border-none"
+              onChange={handleSearch}
+
             />
           </div>
           <div className="mt-4 mx-3 flex flex-col gap-2 overflow-auto">
-            {notices &&
-              notices.map((notice) => (
+            {filteredNotices &&
+              filteredNotices.map((notice) => (
                 <div
                   key={notice._id}
                   onClick={() => navigate(`/recentnotices/${notice._id}`)}
@@ -89,11 +151,11 @@ export default function AddNewNotice() {
                     className="h-10 w-10"
                   />
                   <div className="flex-1">
-                    <p className="  line-clamp-1 px-1 text-sm text-gray-800">
+                    <p className="line-clamp-1 px-1 text-sm text-gray-800">
                       {notice.title}
                     </p>
                     <p className="line-clamp-1 px-1 text-xs text-gray-600">
-                      <span className="">Slug :</span>
+                      <span>Slug :</span>
                       {notice.slug}
                     </p>
                   </div>

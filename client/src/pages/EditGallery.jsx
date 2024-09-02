@@ -7,34 +7,63 @@ import { useSelector } from "react-redux";
 import GalleryComponent from "../components/GalleryComponent";
 
 function EditGallery() {
-    const { currentUser } = useSelector((state) => state.user);
-    const [gallerys, setGallerys] = useState([]);
-    const [gallery , setGallery] = useState({});
-    const {galleryId} = useParams();
-    const navigate = useNavigate();
+  const { currentUser } = useSelector((state) => state.user);
+  const [galleries, setGalleries] = useState([]);
+  const [filteredGalleries, setFilteredGalleries] = useState([]); 
+  const [searchTerm, setSearchTerm] = useState(""); 
+  const [sortCriteria, setSortCriteria] = useState(null);
+  const [gallery, setGallery] = useState({});
+  const { galleryId } = useParams();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchGallerys = async () => {
-          try {
-            const response = await fetch("/api/gallery/getgallery");
-            const data = await response.json();
-            setGallerys(data.gallery);
-          } catch (error) {
-            console.error(error);
-          }
-        };
-        const fetchGallery = async () => {
-          try {
-            const response = await fetch(`/api/gallery/getgallery?galleryId=${galleryId}`);
-            const data = await response.json();
-            setGallery(data.gallery[0]);
-          } catch (error) {
-            console.error(error);
-          }
-        }
-        fetchGallerys();
-        fetchGallery();
-      }, [currentUser._id,galleryId]);
+  useEffect(() => {
+    const fetchGalleries = async () => {
+      try {
+        const response = await fetch("/api/gallery/getgallery");
+        const data = await response.json();
+        setGalleries(data.gallery);
+        setFilteredGalleries(data.gallery);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    const fetchGallery = async () => {
+      try {
+        const response = await fetch(`/api/gallery/getgallery?galleryId=${galleryId}`);
+        const data = await response.json();
+        setGallery(data.gallery[0]);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchGalleries();
+    fetchGallery();
+  }, [currentUser._id, galleryId]);
+
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+
+    const filtered = galleries.filter((item) =>
+      item.description.toLowerCase().includes(term)
+    );
+    setFilteredGalleries(filtered);
+  };
+
+  const sortGalleries = (criteria) => {
+    const sortedGalleries = [...filteredGalleries];
+    if (criteria === "description") {
+      sortedGalleries.sort((a, b) => a.description.localeCompare(b.description));
+    } else if (criteria === "created") {
+      sortedGalleries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    } else if (criteria === "lastEdited") {
+      sortedGalleries.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    }
+    setFilteredGalleries(sortedGalleries);
+    setSortCriteria(criteria);
+  };
 
   return (
     <div className="bg-white w-full h-screen flex flex-col">
@@ -53,20 +82,46 @@ function EditGallery() {
               />
               <h1 className="text-sm font-semibold">Gallery</h1>
             </div>
-            <div className="flex flex-row gap-3">
+            <div className="flex flex-row gap-3 relative">
               <Icon.Plus
                 size={20}
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
-                onClick={()=>navigate("/gallery/creategallery")}
+                onClick={() => navigate("/gallery/creategallery")}
               />
               <Icon.MoreHorizontal
                 size={20}
                 color="gray"
                 strokeWidth={1.5}
                 className="cursor-pointer"
+                onClick={() => setSortCriteria(!sortCriteria)}
               />
+              {sortCriteria && (
+                <div className="absolute top-5 -right-2 w-40 z-10 bg-white border shadow-md rounded-md flex flex-col gap-2">
+                  <div
+                    className="p-2 flex justify-start items-center flex-row mt-1 rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                    onClick={() => sortGalleries("description")}
+                  >
+                    <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                    <span>Sort By Description</span>
+                  </div>
+                  <div
+                    className="p-2 flex justify-start items-center flex-row rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                    onClick={() => sortGalleries("created")}
+                  >
+                    <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                    <span>Sort By Created</span>
+                  </div>
+                  <div
+                    className="p-2 flex justify-start items-center flex-row mb-1 rounded-md text-gray-700 text-sm font-semibold hover:text-white hover:bg-blue-600 cursor-pointer"
+                    onClick={() => sortGalleries("lastEdited")}
+                  >
+                    <Icon.Filter size={16} strokeWidth={1.5} className="mr-2" />
+                    <span>Sort By Last Edited</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="relative mx-3 my-1 px-1 border flex items-center focus-within:border-blue-500 rounded-md">
@@ -81,28 +136,30 @@ function EditGallery() {
             <input
               placeholder="Search"
               className="w-full pl-8 pr-2 py-1 outline-none text-sm border-none"
+              value={searchTerm}
+              onChange={handleSearch} 
             />
           </div>
           <div className="mt-4 mx-3 flex flex-col gap-2 overflow-auto">
-            {gallerys &&
-              gallerys.map((gallery) => (
+            {filteredGalleries &&
+              filteredGalleries.map((item) => (
                 <div
-                key={gallery._id}
-                  onClick={() => navigate(`/gallery/${galleryId._id}`)}
+                  key={item._id}
+                  onClick={() => navigate(`/gallery/${item._id}`)}
                   className="p-1 border border-transparent cursor-pointer hover:bg-gray-100 text-sm text-gray-900 flex flex-row items-center transition duration-100"
                 >
                   <img
-                    src={`/${gallery.images[0]}`}
+                    src={`/${item.images[0]}`}
                     alt=""
                     className="h-10 w-10"
                   />
                   <div className="flex-1">
-                    <p className="  line-clamp-1 px-1 text-sm text-gray-800">
-                      {gallery.description}
+                    <p className="line-clamp-1 px-1 text-sm text-gray-800">
+                      {item.description}
                     </p>
                     <p className="line-clamp-1 px-1 text-xs text-gray-600">
                       <span className="">Slug :</span>
-                      {gallery.slug}
+                      {item.slug}
                     </p>
                   </div>
                 </div>
@@ -110,11 +167,11 @@ function EditGallery() {
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
-          <GalleryComponent gallery={gallery}/>
+          <GalleryComponent gallery={gallery} />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default EditGallery
+export default EditGallery;

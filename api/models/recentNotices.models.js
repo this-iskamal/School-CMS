@@ -19,6 +19,10 @@ const RecentNoticeSchema = new Schema({
     type: String,
     required: true,
   }],
+  pdfs: [{
+    type: String,
+    required: true,
+  }],
 },{timestamps: true});
 
 const RecentNotice = mongoose.model('RecentNotice', RecentNoticeSchema);

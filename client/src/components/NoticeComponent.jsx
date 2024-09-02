@@ -5,8 +5,11 @@ import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useSelector } from "react-redux";
 import { formatDistanceToNow } from "date-fns";
-import { Button, Modal } from "flowbite-react";
+import { Button, Modal, Toast } from "flowbite-react";
 import { HiOutlineExclamationCircle } from "react-icons/hi";
+import { toast, ToastContainer } from "react-toastify";
+import "react-quill/dist/quill.snow.css";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function NoticeComponent({ notice }) {
   const { currentUser } = useSelector((state) => state.user);
@@ -19,11 +22,15 @@ export default function NoticeComponent({ notice }) {
     content: "",
     images: [],
     imageUrls: [],
+    pdfs: [],
+    pdfUrls: [],
   });
   const [recentNotice, setRecentNotice] = useState("");
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [pdfPreviews, setPdfPreviews] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     if (notice) {
@@ -33,11 +40,16 @@ export default function NoticeComponent({ notice }) {
         content: notice.content || "",
         images: [],
         imageUrls: notice.images || [],
+        pdfs: [],
+        pdfUrls: notice.pdfs || [],
       });
       setRecentNotice(notice.content || "");
       if (notice.images) {
         setImagePreviews(notice.images);
         setUploadProgress(Array(notice.images.length).fill(100));
+      }
+      if (notice.pdfs) {
+        setPdfPreviews(notice.pdfs);
       }
     }
   }, [notice]);
@@ -47,22 +59,28 @@ export default function NoticeComponent({ notice }) {
       (formData.title || "").trim() !== "" &&
       (formData.slug || "").trim() !== "" &&
       (recentNotice || "").trim() !== "" &&
-      (formData.images.length > 0 || imagePreviews.length > 0) &&
       uploadProgress.every((progress) => progress === 100);
 
     setIsFormValid(isValid);
-  }, [formData, recentNotice, uploadProgress, imagePreviews]);
+  }, [formData, recentNotice, uploadProgress]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleImageChange = (e) => {
+  const handleFileChange = (e, type) => {
     const files = Array.from(e.target.files);
-    const newImagePreviews = files.map((file) => file);
-    setImagePreviews([...imagePreviews, ...newImagePreviews]);
-    setFormData({ ...formData, images: [...formData.images, ...files] });
+    const newFilePreviews = files.map((file) => file);
+
+    if (type === "image") {
+      setImagePreviews([...imagePreviews, ...newFilePreviews]);
+      setFormData({ ...formData, images: [...formData.images, ...files] });
+    } else if (type === "pdf") {
+      setPdfPreviews([...pdfPreviews, ...newFilePreviews]);
+      setFormData({ ...formData, pdfs: [...formData.pdfs, ...files] });
+    }
+
     setUploadProgress([...uploadProgress, ...Array(files.length).fill(0)]);
 
     files.forEach((file, index) => {
@@ -89,15 +107,26 @@ export default function NoticeComponent({ notice }) {
     });
   };
 
-  const handleRemoveImage = (index) => {
-    const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
-    const newImages = formData.images.filter((_, i) => i !== index);
-    const newImageUrls = formData.imageUrls.filter((_, i) => i !== index); 
-    const newUploadProgress = uploadProgress.filter((_, i) => i !== index);
+  const handleRemoveFile = (index, type) => {
+    if (type === "image") {
+      const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
+      const newImages = formData.images.filter((_, i) => i !== index);
+      const newImageUrls = formData.imageUrls.filter((_, i) => i !== index);
+      const newUploadProgress = uploadProgress.filter((_, i) => i !== index);
 
-    setImagePreviews(newImagePreviews);
-    setFormData({ ...formData, images: newImages, imageUrls: newImageUrls }); 
-    setUploadProgress(newUploadProgress);
+      setImagePreviews(newImagePreviews);
+      setFormData({ ...formData, images: newImages, imageUrls: newImageUrls });
+      setUploadProgress(newUploadProgress);
+    } else if (type === "pdf") {
+      const newPdfPreviews = pdfPreviews.filter((_, i) => i !== index);
+      const newPdfs = formData.pdfs.filter((_, i) => i !== index);
+      const newPdfUrls = formData.pdfUrls.filter((_, i) => i !== index);
+      const newUploadProgress = uploadProgress.filter((_, i) => i !== index);
+
+      setPdfPreviews(newPdfPreviews);
+      setFormData({ ...formData, pdfs: newPdfs, pdfUrls: newPdfUrls });
+      setUploadProgress(newUploadProgress);
+    }
   };
 
   const handleGenerateClick = (e) => {
@@ -110,6 +139,9 @@ export default function NoticeComponent({ notice }) {
 
   const handlePublish = async (e) => {
     e.preventDefault();
+    if (isPublishing) return;
+
+    setIsPublishing(true);
 
     const noticeData = new FormData();
     noticeData.append("title", formData.title);
@@ -118,9 +150,16 @@ export default function NoticeComponent({ notice }) {
     formData.images.forEach((image) => {
       noticeData.append("images", image);
     });
+    formData.pdfs.forEach((pdf) => {
+      noticeData.append("pdfs", pdf);
+    });
     noticeData.append(
       "imageUrls",
       JSON.stringify(imagePreviews.filter((image) => typeof image === "string"))
+    );
+    noticeData.append(
+      "pdfUrls",
+      JSON.stringify(pdfPreviews.filter((pdf) => typeof pdf === "string"))
     );
 
     try {
@@ -132,20 +171,26 @@ export default function NoticeComponent({ notice }) {
         }
       );
 
-
       if (response.ok) {
-        console.log("Notice published successfully!");
+        toast.success("Notice published successfully!");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
-        console.error("Failed to publish notice");
+        toast.error("Failed to publish notice");
       }
     } catch (error) {
+      toast.error("Failed to publish notice");
       console.error("Error:", error);
+    }finally {
+      setIsPublishing(false);
     }
   };
 
   const handleToggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
+
   const handleDelete = async () => {
     try {
       const res = await fetch(
@@ -156,21 +201,25 @@ export default function NoticeComponent({ notice }) {
       );
       const data = await res.json();
       if (!res.ok) {
+        toast.error(data.message);
         console.log(data.message);
       } else {
         setDeleteModal(false);
-        navigate(-1);
+        navigate("/recentnotices");
       }
     } catch (error) {
+      toast.error("Failed to delete notice");
       console.error("Error:", error);
     }
   };
+
   const handleSchedulePublish = () => {
     console.log("Schedule Publish clicked");
   };
 
   return (
     <div className="flex flex-col h-full">
+      <ToastContainer />
       <div className="flex flex-row justify-between px-4 py-5 border-b-2">
         <h1 className="text-sm font-semibold text-black">This is the notice</h1>
         <Icon.X
@@ -254,7 +303,7 @@ export default function NoticeComponent({ notice }) {
               id="imageUpload"
               multiple
               className="w-full border-2 px-3 py-1 text-md text-gray-800 outline-blue-500 rounded-sm"
-              onChange={handleImageChange}
+              onChange={(e) => handleFileChange(e, "image")}
             />
             <div className="flex flex-wrap gap-2 mt-2">
               {imagePreviews.map((image, index) => (
@@ -283,7 +332,52 @@ export default function NoticeComponent({ notice }) {
                   <button
                     type="button"
                     className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                    onClick={() => handleRemoveImage(index)}
+                    onClick={() => handleRemoveFile(index, "image")}
+                  >
+                    <Icon.X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="pdfUpload"
+              className="text-gray-900 text-md font-semibold"
+            >
+              PDFs
+            </label>
+            <input
+              type="file"
+              id="pdfUpload"
+              multiple
+              className="w-full border-2 px-3 py-1 text-md text-gray-800 outline-blue-500 rounded-sm"
+              onChange={(e) => handleFileChange(e, "pdf")}
+            />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {pdfPreviews.map((image, index) => (
+                <div key={index} className="relative">
+                  <p className="text-sm mr-8 h-16">
+                    {typeof image === "string"
+                      ? image.split("\\").pop()
+                      : image.name}
+                  </p>
+                  <div className="absolute inset-0 bg-gray-200 bg-opacity-50 flex items-center justify-center">
+                    {uploadProgress[index] < 100 ? (
+                      <div className="w-16 bg-gray-300 rounded-full h-2">
+                        <div
+                          className="bg-blue-500 h-2 rounded-full"
+                          style={{ width: `${uploadProgress[index]}%` }}
+                        ></div>
+                      </div>
+                    ) : (
+                      <Icon.CheckCircle size={24} color="green" />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                    onClick={() => handleRemoveFile(index, "pdf")}
                   >
                     <Icon.X size={16} />
                   </button>
@@ -304,14 +398,14 @@ export default function NoticeComponent({ notice }) {
           <div className="flex flex-row items-center gap-2">
             <button
               className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-                isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+                isFormValid&&!isPublishing ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
               }`}
               type="submit"
-              disabled={!isFormValid}
+              disabled={!isFormValid||isPublishing}
               onClick={handlePublish}
             >
               <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-              <span className="text-xs font-semibold">Publish</span>
+              <span className="text-xs font-semibold">{isPublishing?"Publishing...":"Publish"}</span>
             </button>
             <div onClick={handleToggleDropdown} className="cursor-pointer">
               <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
@@ -321,7 +415,7 @@ export default function NoticeComponent({ notice }) {
             <div className="absolute right-0 -mt-28 w-36 bg-white border border-gray-300 rounded shadow-lg">
               <button
                 className="block w-full px-4 py-2 text-sm text-left border-b text-gray-800 hover:bg-gray-100"
-                onClick={()=>setDeleteModal(true)}
+                onClick={() => setDeleteModal(true)}
               >
                 Delete
               </button>

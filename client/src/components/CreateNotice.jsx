@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
 import ReactQuill from "react-quill";
+import { toast, ToastContainer } from "react-toastify";
 import "react-quill/dist/quill.snow.css";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function CreateNotice() {
   const navigate = useNavigate();
@@ -11,10 +13,14 @@ export default function CreateNotice() {
     slug: "",
     content: "",
     images: [],
+    pdfs: [],
   });
   const [recentNotice, setRecentNotice] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [pdfPreviews, setPdfPreviews] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
+  const [pdfUploadProgress, setPdfUploadProgress] = useState([]);
   const [isFormValid, setIsFormValid] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,10 +30,12 @@ export default function CreateNotice() {
       formData.slug.trim() !== "" &&
       recentNotice.trim() !== "" &&
       formData.images.length > 0 &&
-      uploadProgress.every((progress) => progress === 100);
+      formData.pdfs.length > 0 &&
+      uploadProgress.every((progress) => progress === 100) &&
+      pdfUploadProgress.every((progress) => progress === 100);
 
     setIsFormValid(isValid);
-  }, [formData, recentNotice, uploadProgress]);
+  }, [formData, recentNotice, uploadProgress, pdfUploadProgress]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,20 +51,41 @@ export default function CreateNotice() {
 
     files.forEach((file, index) => {
       const reader = new FileReader();
-      reader.onloadstart = () => updateProgress(index, 0);
+      reader.onloadstart = () => updateProgress(index, 0, setUploadProgress);
       reader.onprogress = (event) => {
         if (event.lengthComputable) {
           const progress = (event.loaded / event.total) * 100;
-          updateProgress(index, progress);
+          updateProgress(index, progress, setUploadProgress);
         }
       };
-      reader.onloadend = () => updateProgress(index, 100);
+      reader.onloadend = () => updateProgress(index, 100, setUploadProgress);
       reader.readAsDataURL(file);
     });
   };
 
-  const updateProgress = (index, progress) => {
-    setUploadProgress((prevProgress) => {
+  const handlePdfChange = (e) => {
+    const files = Array.from(e.target.files);
+    const previewNames = files.map((file) => file.name);
+    setPdfPreviews(previewNames);
+    setFormData({ ...formData, pdfs: files });
+    setPdfUploadProgress(Array(files.length).fill(0));
+
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onloadstart = () => updateProgress(index, 0, setPdfUploadProgress);
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 100;
+          updateProgress(index, progress, setPdfUploadProgress);
+        }
+      };
+      reader.onloadend = () => updateProgress(index, 100, setPdfUploadProgress);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const updateProgress = (index, progress, setProgress) => {
+    setProgress((prevProgress) => {
       const newProgress = [...prevProgress];
       newProgress[index] = progress;
       return newProgress;
@@ -73,6 +102,8 @@ export default function CreateNotice() {
 
   const handlePublish = async (e) => {
     e.preventDefault();
+    if (isPublishing) return;
+    setIsPublishing(true);
 
     const noticeData = new FormData();
     noticeData.append("title", formData.title);
@@ -80,6 +111,9 @@ export default function CreateNotice() {
     noticeData.append("content", recentNotice);
     formData.images.forEach((image) => {
       noticeData.append("images", image);
+    });
+    formData.pdfs.forEach((pdf) => {
+      noticeData.append("pdfs", pdf);
     });
 
     try {
@@ -89,20 +123,32 @@ export default function CreateNotice() {
       });
 
       if (response.ok) {
-        console.log("Notice published successfully!");
+        toast.success("Notice published successfully!");
+        setTimeout(() => {
+          navigate(-1);
+        }, 2000);
       } else {
         setError("Failed to publish notice");
-        if (response.message === "Unauthenticated User")
+        if (response.message === "Unauthenticated User") {
           setError("Unauthenticated User. Please login to continue.");
+          toast.error("Unauthenticated User. Please login to continue.");
+          navigate("/sign-in");
+        }
+
         console.log(response);
+        toast.error("Error occurred while publishing the notice.");
       }
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Error occurred while publishing the notice.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
   return (
     <div className="flex flex-col h-full">
+      <ToastContainer />
       <div className="flex flex-row justify-between px-4 py-5 border-b-2">
         <h1 className="text-sm font-semibold text-black">This is the notice</h1>
         <Icon.X
@@ -212,6 +258,44 @@ export default function CreateNotice() {
               ))}
             </div>
           </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="pdfUpload"
+              className="text-gray-900 text-md font-semibold"
+            >
+              PDF Upload
+            </label>
+            <input
+              type="file"
+              id="pdfUpload"
+              multiple
+              accept=".pdf"
+              className="w-full border-2 px-3 py-1 text-md text-gray-800 outline-blue-500 rounded-sm"
+              onChange={handlePdfChange}
+            />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {pdfPreviews.map((pdf, index) => (
+                <div key={index} className="relative">
+                  <div className="flex items-center gap-2">
+                    <Icon.FileText size={30} />
+                    <span>{pdf}</span>
+                  </div>
+                  <div className="absolute inset-0 bg-gray-200 bg-opacity-50 flex items-center justify-center">
+                    {pdfUploadProgress[index] < 100 ? (
+                      <div className="w-16 bg-gray-300 rounded-full h-2">
+                        <div
+                          className="bg-blue-500 h-2 rounded-full"
+                          style={{ width: `${pdfUploadProgress[index]}%` }}
+                        ></div>
+                      </div>
+                    ) : (
+                      <Icon.CheckCircle size={24} color="green" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </form>
       </div>
       <div className="flex flex-row justify-between items-center px-6 py-2 border-t-2">
@@ -219,14 +303,16 @@ export default function CreateNotice() {
         <div className="flex flex-row items-center gap-2">
           <button
             className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-              isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+              isFormValid&&!isPublishing ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
             }`}
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid || isPublishing}
             onClick={handlePublish}
           >
             <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-            <span className="text-xs font-semibold">Publish</span>
+            <span className="text-xs font-semibold">
+              {isPublishing ? "Publishing..." : "Publish"}
+            </span>
           </button>
           <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
         </div>

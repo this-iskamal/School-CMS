@@ -3,6 +3,9 @@ import * as Icon from "react-feather";
 import { useNavigate } from "react-router-dom";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { toast, ToastContainer } from "react-toastify";
+import "react-quill/dist/quill.snow.css";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function CreateNews() {
   const navigate = useNavigate();
@@ -10,10 +13,11 @@ export default function CreateNews() {
     title: "",
     slug: "",
     content: "",
-    author:"",
+    author: "",
     images: [],
   });
   const [news, setNews] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
   const [isFormValid, setIsFormValid] = useState(false);
@@ -75,6 +79,9 @@ export default function CreateNews() {
 
   const handlePublish = async (e) => {
     e.preventDefault();
+    if (isPublishing) return;
+
+    setIsPublishing(true);
 
     const newsDate = new FormData();
     newsDate.append("title", formData.title);
@@ -92,20 +99,32 @@ export default function CreateNews() {
       });
 
       if (response.ok) {
-        console.log("News published successfully!");
+        toast.success("News published successfully!");
+        setTimeout(() => {
+          navigate(-1);
+        }, 2000);
       } else {
         setError("Failed to publish news");
-        if (response.message === "Unauthenticated User")
+        if (response.message === "Unauthenticated User") {
           setError("Unauthenticated User. Please login to continue.");
+          toast.error("Unauthenticated User. Please login to continue.");
+          navigate("/sign-in");
+        }
+
         console.log(response);
+        toast.error("Error occurred while publishing the news.");
       }
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Error occurred while publishing the news.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
   return (
     <div className="flex flex-col h-full">
+      <ToastContainer />
       <div className="flex flex-row justify-between px-4 py-5 border-b-2">
         <h1 className="text-sm font-semibold text-black">This is the news</h1>
         <Icon.X
@@ -238,14 +257,14 @@ export default function CreateNews() {
         <div className="flex flex-row items-center gap-2">
           <button
             className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-              isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+              isFormValid&&!isPublishing ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
             }`}
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid||isPublishing}
             onClick={handlePublish}
           >
             <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-            <span className="text-xs font-semibold">Publish</span>
+            <span className="text-xs font-semibold">{isPublishing ? "Publishing...":"Publish"}</span>
           </button>
           <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
         </div>

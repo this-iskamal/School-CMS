@@ -4,9 +4,25 @@ import path from "path";
 import { errorHandler } from "../utlis/error.js";
 import Teacher from "../models/teachers.models.js";
 
+const uploadPath = 'api/uploads/teacher';
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "api/uploads/teacher");
+
+    fs.access(uploadPath, fs.constants.F_OK, (err) => {
+      if (err) {
+
+        fs.mkdir(uploadPath, { recursive: true }, (err) => {
+          if (err) {
+            return cb(err);
+          }
+          cb(null, uploadPath);
+        });
+      } else {
+
+        cb(null, uploadPath);
+      }
+    });
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -21,7 +37,7 @@ export const addNewTeacher = [
     if (!req.user.isAdmin) {
       return next(errorHandler(403, "You are not allowed to add teacher"));
     }
-    if (!req.body.name || !req.body.address || !req.body.position) {
+    if (!req.body.name || !req.body.address || !req.body.position || !req.body.phonenumber) {
       return next(errorHandler(400, "Please provide all the fields"));
     }
 
@@ -30,6 +46,7 @@ export const addNewTeacher = [
       address: req.body.address,
       position: req.body.position,
       profilePicture: req.file.path,
+      phonenumber:req.body.phonenumber,
     });
 
     try {
@@ -98,7 +115,7 @@ export const updateTeacher = async (req, res, next) => {
   if (!req.user.isAdmin) {
     return next(errorHandler(403, "You are not allowed to update teacher"));
   }
-  if (!req.body.name || !req.body.address || !req.body.position) {
+  if (!req.body.name || !req.body.address || !req.body.position ||!req.body.phonenumber) {
     return next(errorHandler(400, "Please provide all the fields"));
   }
 
@@ -111,6 +128,7 @@ export const updateTeacher = async (req, res, next) => {
     teacher.name = req.body.name;
     teacher.address = req.body.address;
     teacher.position = req.body.position;
+    teacher.phonenumber = req.body.phonenumber;
 
     const updatedTeacher = await teacher.save();
     res.status(200).json(updatedTeacher);

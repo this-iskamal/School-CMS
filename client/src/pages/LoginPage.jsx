@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Alert, Button, Label, Spinner, TextInput } from "flowbite-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -32,6 +31,7 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
       const data = await res.json();
       if (data.success === false) {
@@ -88,6 +88,11 @@ export default function LoginPage() {
           </Button>
 
         </form>
+        <div className="mt-4 text-center">
+          <Link to="/forgot-password" className="text-teal-700 hover:underline">
+            Forgot Password?
+          </Link>
+        </div>
         {errorMessage && (
           <Alert color="failure" className="mt-5">
             {errorMessage}

@@ -4,20 +4,24 @@ import { useNavigate } from "react-router-dom";
 import "react-quill/dist/quill.snow.css";
 import { useSelector } from "react-redux";
 import { formatDistanceToNow } from "date-fns";
-import { Button, Modal } from "flowbite-react";
+import { Button, Modal, Toast } from "flowbite-react";
 import { HiOutlineExclamationCircle } from "react-icons/hi";
+import { toast, ToastContainer } from "react-toastify";
+import "react-quill/dist/quill.snow.css";
+import "react-toastify/dist/ReactToastify.css";
 
 function TeacherComponent({ teacher }) {
   const { currentUser } = useSelector((state) => state.user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     address: "",
     position: "",
+    phonenumber: "",
   });
-
 
   const [isFormValid, setIsFormValid] = useState(false);
   const [error, setError] = useState("");
@@ -28,16 +32,17 @@ function TeacherComponent({ teacher }) {
         name: teacher.name || "",
         position: teacher.position || "",
         address: teacher.address || "",
+        phonenumber: teacher.phonenumber || "",
       });
     }
   }, [teacher]);
 
   useEffect(() => {
     const isValid =
-      
       (formData.name || "").trim() !== "" &&
       (formData.position || "").trim() !== "" &&
-      (formData.address || "").trim() !== ""
+      (formData.phonenumber || "").trim() !== "" &&
+      (formData.address || "").trim() !== "";
 
     setIsFormValid(isValid);
   }, [formData]);
@@ -47,12 +52,10 @@ function TeacherComponent({ teacher }) {
     setFormData({ ...formData, [name]: value });
   };
 
-  
-
-
   const handlePublish = async (e) => {
     e.preventDefault();
-  
+    if (isPublishing) return;
+    setIsPublishing(true);
 
     try {
       const response = await fetch(
@@ -65,17 +68,24 @@ function TeacherComponent({ teacher }) {
           body: JSON.stringify(formData),
         }
       );
-  
+
       if (response.ok) {
-        console.log("Teacher published successfully!");
+        toast.success("Techer published successfully!");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
-        console.error("Failed to publish teacher");
+        toast.error("Failed to publish teacher");
       }
     } catch (error) {
+      toast.error("Failed to publish teacher");
+
       console.error("Error:", error);
+    } finally {
+      setIsPublishing(false);
     }
   };
-  
+
   const handleToggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
@@ -90,22 +100,26 @@ function TeacherComponent({ teacher }) {
       );
       const data = await res.json();
       if (!res.ok) {
+        toast.error(data.message);
+
         console.log(data.message);
       } else {
         setDeleteModal(false);
-        navigate(-1);
+        navigate("/teachers");
       }
     } catch (error) {
+      toast.error("Failed to delete teacher");
+
       console.error("Error:", error);
     }
   };
   const handleSchedulePublish = () => {
     console.log("Schedule Publish clicked");
-
   };
 
   return (
     <div className="flex flex-col h-full">
+      <ToastContainer />
       <div className="flex flex-row justify-between px-4 py-5 border-b-2">
         <h1 className="text-sm font-semibold text-black">
           This is the teacher
@@ -173,9 +187,22 @@ function TeacherComponent({ teacher }) {
               className="w-full border-2 px-3 py-1 text-md text-gray-800 outline-blue-500 rounded-sm"
             />
           </div>
-
-         
-      
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="phonenumber"
+              className="text-gray-900 text-md font-semibold"
+            >
+              Phone Number
+            </label>
+            <input
+              type="text"
+              name="phonenumber"
+              id="phonenumber"
+              value={formData.phonenumber}
+              onChange={handleInputChange}
+              className="w-full border-2 px-3 py-1 text-md text-gray-800 outline-blue-500 rounded-sm"
+            />
+          </div>
         </form>
       </div>
       <div className="flex flex-row justify-between items-center px-6 py-2 border-t-2">
@@ -191,14 +218,18 @@ function TeacherComponent({ teacher }) {
           <div className="flex flex-row items-center gap-2">
             <button
               className={`px-2 py-1 border-2 rounded-sm flex flex-row items-center gap-1 ${
-                isFormValid ? "bg-gray-100" : "bg-gray-300 cursor-not-allowed"
+                isFormValid && !isPublishing
+                  ? "bg-gray-100"
+                  : "bg-gray-300 cursor-not-allowed"
               }`}
               type="submit"
-              disabled={!isFormValid}
+              disabled={!isFormValid || isPublishing}
               onClick={handlePublish}
             >
               <Icon.ArrowUp size={20} color="gray" strokeWidth={2} />
-              <span className="text-xs font-semibold">Publish</span>
+              <span className="text-xs font-semibold">
+                {isPublishing ? "Publishing" : "Publish"}
+              </span>
             </button>
             <div onClick={handleToggleDropdown} className="cursor-pointer">
               <Icon.MoreHorizontal size={20} color="gray" strokeWidth={2} />
